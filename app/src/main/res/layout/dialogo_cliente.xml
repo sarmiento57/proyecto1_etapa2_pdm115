@@ -1,0 +1,77 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/client_id_hint"
+            android:textStyle="bold" />
+        <EditText
+            android:id="@+id/edtIdCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:enabled="false" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/client_name_hint"
+            android:textStyle="bold" />
+        <EditText
+            android:id="@+id/edtNombreCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:minHeight="48dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/client_phone_hint"
+            android:textStyle="bold" />
+        <EditText
+            android:id="@+id/edtTelefonoCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="phone"
+            android:maxLength="8"
+            android:minHeight="48dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/client_email_hint"
+            android:textStyle="bold" />
+        <EditText
+            android:id="@+id/edtCorreoCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textEmailAddress"
+            android:minHeight="48dp" />
+
+        <!-- Added Buttons for Save and Clear -->
+        <Button
+            android:id="@+id/btnGuardarCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save"
+            android:layout_marginTop="16dp"/>
+
+        <Button
+            android:id="@+id/btnLimpiarCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/clear"
+            android:layout_marginTop="8dp"/>
+
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/id_forma_farmaceutica"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/editTextIdFormaFarmaceutica"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/id_forma_farmaceutica"
+            android:inputType="number" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tipo_forma_farmaceutica"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp" />
+
+        <EditText
+            android:id="@+id/editTextTipoFormaFarmaceutica"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/tipo_forma_farmaceutica"
+            android:inputType="text" />
+
+        <Button
+            android:id="@+id/btnGuardarFormaFarmaceutica"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/btnLimpiarFormaFarmaceutica"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/clear"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!--     Campo: Id Farmacia -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/id_farmacia"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/editTextIdFarmacia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints="username"
+            android:hint="@string/id_farmacia"
+            android:inputType="number"
+            android:maxLength="4"
+            android:minHeight="48dp"
+            android:textColor="#FF000000" />
+
+        <!-- Campo: Id Dirección -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/id_direccion"
+            android:textSize="18sp"
+            android:layout_marginTop="15dp" />
+
+        <Spinner
+            android:id="@+id/spinnerIdDireccion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp" />
+
+
+        <!-- Campo: Nombre Farmacia -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/nombre_farmacia"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/editTextNombreFarmacia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:maxLength="100"
+            android:minHeight="48dp"
+            android:hint="@string/nombre_farmacia"
+            android:autofillHints="name" />
+
+        <!-- Contenedor de botones -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <Button
+                android:id="@+id/buttonSave"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="@string/save" />
+
+            <Button
+                android:id="@+id/buttonClear"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="@string/clear" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

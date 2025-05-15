@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <EditText
+            android:id="@+id/editTextIdDireccion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/id_direccion"
+            android:maxLength="4"
+            android:minHeight="48dp"
+            android:inputType="number" />
+
+
+        <EditText
+            android:id="@+id/editTextDireccionExacta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/direction"
+            android:minHeight="48dp"
+            android:maxLength="200" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/departamento"
+            android:textSize="18sp"
+            android:layout_marginTop="15dp" />
+
+        <Spinner
+            android:id="@+id/spinnerDepartamento"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/municipio"
+            android:textSize="18sp"
+            android:layout_marginTop="15dp" />
+
+        <Spinner
+            android:id="@+id/spinnerMunicipio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/distrito"
+            android:textSize="18sp"
+            android:layout_marginTop="15dp" />
+
+        <Spinner
+            android:id="@+id/spinnerDistrito"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp" />
+
+        <Button
+            android:id="@+id/btnGuardarDireccion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save" />
+
+        <Button
+            android:id="@+id/btnLimpiarDireccion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/clear"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>

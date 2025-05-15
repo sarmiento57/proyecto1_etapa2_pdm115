@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Brand -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="5dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/brand" />
+            <Spinner
+                android:id="@+id/spinnerItemMarca"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="7" />
+        </LinearLayout>
+
+        <!-- Route of administration -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="5dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/route_of_administration" />
+            <Spinner
+                android:id="@+id/spinnerItemROA"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="7" />
+        </LinearLayout>
+
+        <!-- Subcategory -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="5dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/subcategory" />
+            <Spinner
+                android:id="@+id/spinnerItemSubCategoria"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="7" />
+        </LinearLayout>
+
+        <!-- Pharmaceutical form -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="5dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/pharmaceutical_form" />
+            <Spinner
+                android:id="@+id/spinnerItemFormaFarmaceutica"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="7" />
+        </LinearLayout>
+
+        <!-- Header -->
+        <TextView
+            android:layout_marginTop="25dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:text="@string/item"/>
+
+        <!-- Item ID -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/item_ID" />
+            <EditText
+                android:id="@+id/editTextItemId"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="7"
+                android:hint="@string/item_ID"
+                android:inputType="number" />
+        </LinearLayout>
+
+        <!-- Item name -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/item_name" />
+            <EditText
+                android:id="@+id/editTextItemName"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="7"
+                android:hint="@string/item_name" />
+        </LinearLayout>
+
+        <!-- Item description -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/item_description" />
+            <EditText
+                android:id="@+id/editTextItemDescription"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="7"
+                android:hint="@string/item_description" />
+        </LinearLayout>
+
+        <!-- Restriction and Price -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="@string/restricted"
+                android:textAlignment="center" />
+            <CheckBox
+                android:id="@+id/checkBoxItemRestricted"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="@string/price"
+                android:textAlignment="center" />
+            <EditText
+                android:id="@+id/editTextItemPrice"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="5"
+                android:inputType="numberDecimal"
+                android:hint="0.00" />
+        </LinearLayout>
+
+        <!-- Buttons -->
+        <Button
+            android:id="@+id/btnGuardarArticulo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save" />
+
+        <Button
+            android:id="@+id/btnLimpiarArticulo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/clear"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>
+

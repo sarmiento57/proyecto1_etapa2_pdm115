@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <!-- Campo: Id Detalle Existencia -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/existence_detail_id"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/editTextIdExistenceDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints="username"
+            android:hint="@string/existence_detail_id"
+            android:inputType="number"
+            android:maxLength="4"
+            android:minHeight="48dp"
+            android:textColor="#FF000000"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Campo: Id Articulo -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Id ARTICULO"
+            android:textSize="18sp" />
+
+        <Spinner
+            android:id="@+id/spinnerIdArticulo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Campo: Id Farmacia -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/id_farmacia"
+            android:textSize="18sp" />
+
+        <Spinner
+            android:id="@+id/spinnerIdFarmacia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Campo: Cantidad Existente -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/existence_amount"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/editTextExistenceAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:maxLength="100"
+            android:minHeight="48dp"
+            android:hint="@string/existence_amount"
+            android:autofillHints="name"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Campo: Fecha de Vencimiento -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/expiration_Date"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/editTextExpirationDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="date"
+            android:maxLength="100"
+            android:minHeight="48dp"
+            android:hint="@string/expiration_Date"
+            android:autofillHints="name"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Contenedor de botones -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <Button
+                android:id="@+id/buttonSaveExistence"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="@string/save" />
+
+            <Button
+                android:id="@+id/buttonClearExistence"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="@string/clear" />
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

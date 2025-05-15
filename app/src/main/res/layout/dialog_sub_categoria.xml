@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/category"
+                android:gravity="center_vertical"
+                android:paddingEnd="8dp"/>
+
+            <Spinner
+                android:id="@+id/spinnerIdCategoria"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="7"
+                android:padding="8dp"
+                android:spinnerMode="dropdown" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/subcategory_id"
+                android:gravity="center_vertical" />
+
+            <EditText
+                android:id="@+id/editTextsubCategoriaId"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="7"
+                android:hint="@string/subcategory_id"
+                android:inputType="number"
+                android:minHeight="48dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="@string/subcategory_name"
+                android:gravity="center_vertical"
+                android:paddingEnd="8dp"/>
+
+            <EditText
+                android:id="@+id/editTextsubCategoriaNombre"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="7"
+                android:hint="@string/subcategory_name"
+                android:minHeight="48dp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnGuardarSubCategoria"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save" />
+
+        <Button
+            android:id="@+id/btnLimpiarSubCategoria"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/clear"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+</ScrollView>
+

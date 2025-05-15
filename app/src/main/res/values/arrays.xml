@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<!--
+    <string name="app_name">Control of Medications and Household Articles</string>
+    <string name="direction">Direction</string>
+    <string name="branch">Branch</string>
+    <string name="existence_detail">Existence Detail</string>
+    <string name="sale">Sale</string>
+    <string name="sale_detail">Sales Details</string>
+    <string name="sale_invoice">Sales Invoice</string>
+    <string name="client">Client</string>
+    <string name="purchase">Purchase</string>
+    <string name="purchase_detail">Purchase Details</string>
+    <string name="purchase_invoice">Purchase Invoice</string>
+    <string name="supplier">Supplier</string>
+    <string name="pharmaceutical_form">Pharmaceutical Form</string>
+    <string name="brand">Brand</string>
+    <string name="route_of_administration">Route of Administration</string>
+    <string name="prescription">Prescription</string>
+    <string name="doctor">Doctor</string>
+    <string name="item">Item</string>
+    <string name="category">Category</string>
+    <string name="subcategory">Subcategory</string>
+    -->
+    <!-- string-array name="id_menu">
+        <item>direction</item>
+        <item>branch</item>
+        <item>existence_detail</item>
+        <item>sale</item>
+        <item>sale_detail</item>
+        <item>sale_invoice</item>
+        <item>client</item>
+        <item>purchase</item>
+        <item>purchase_detail</item>
+        <item>purchase_invoice</item>
+        <item>supplier</item>
+        <item>pharmaceutical_form</item>
+        <item>brand</item>
+        <item>route_of_administration</item>
+        <item>prescription</item>
+        <item>doctor</item>
+        <item>item</item>
+        <item>category</item>
+        <item>subcategory</item>
+    </string-array -->
+    <string-array name="id_menu">
+        <item>001</item>
+        <item>006</item>
+        <item>011</item>
+        <item>021</item>
+        <item>026</item>
+        <item>031</item>
+        <item>041</item>
+        <item>046</item>
+        <item>051</item>
+        <item>056</item>
+        <item>061</item>
+        <item>066</item>
+        <item>071</item>
+        <item>076</item>
+        <item>081</item>
+        <item>086</item>
+        <item>091</item>
+    </string-array>
+    <string-array name="options_menu">
+        <item>@string/direction</item>
+        <item>@string/branch</item>
+        <item>@string/existence_detail</item>
+        <item>@string/sale_detail</item>
+        <item>@string/sale_invoice</item>
+        <item>@string/client</item>
+        <item>@string/purchase_detail</item>
+        <item>@string/purchase_invoice</item>
+        <item>@string/supplier</item>
+        <item>@string/pharmaceutical_form</item>
+        <item>@string/brand</item>
+        <item>@string/route_of_administration</item>
+        <item>@string/prescription</item>
+        <item>@string/doctor</item>
+        <item>@string/item</item>
+        <item>@string/category</item>
+        <item>@string/subcategory</item>
+    </string-array>
+    <string-array name="main_icons">
+        <item>direction</item>
+        <item>branch</item>
+        <item>existence_detail</item>
+        <item>sale_detail</item>
+        <item>sale_invoice</item>
+        <item>client</item>
+        <item>purchase_detail</item>
+        <item>purchase_invoice</item>
+        <item>supplier</item>
+        <item>pharmaceutical_form</item>
+        <item>brand</item>
+        <item>route_of_administration</item>
+        <item>prescription</item>
+        <item>doctor</item>
+        <item>item</item>
+        <item>category</item>
+        <item>subcategory</item>
+    </string-array>
+</resources>

@@ -1,0 +1,68 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Botones para mostrar spinner -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:weightSum="2">
+
+            <Button
+                android:id="@+id/btnMostrarFarmacia"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/mostrar_farmacia" />
+
+            <Button
+                android:id="@+id/btnMostrarArticulo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/mostrar_articulo" />
+        </LinearLayout>
+
+        <!-- Spinner Farmacia -->
+        <Spinner
+            android:id="@+id/spinnerFarmaciaB"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp" />
+
+        <!-- Spinner Articulo -->
+        <Spinner
+            android:id="@+id/spinnerArticuloB"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp" />
+
+        <!-- Botón Buscar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <Button
+                android:id="@+id/btnSearchDetailExistence"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:layout_marginEnd="8dp"
+                android:text="@string/search" />
+        </LinearLayout>
+
+    </LinearLayout> <!-- Fin LinearLayout interior -->
+
+</ScrollView> <!-- Fin ScrollView -->

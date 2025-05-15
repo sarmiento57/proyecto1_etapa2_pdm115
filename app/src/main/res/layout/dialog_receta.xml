@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/id_doctor"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/spinnerIdDoctor"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:padding="8dp"
+            android:spinnerMode="dropdown" />
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/id_cliente"
+            android:layout_marginTop="8dp" />
+
+        <Spinner
+            android:id="@+id/spinnerIdCliente"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:padding="8dp"
+            android:spinnerMode="dropdown" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/id_receta"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/editTextIdReceta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/id_receta"
+            android:inputType="number"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/fecha_receta"
+            android:layout_marginTop="12dp" />
+
+        <EditText
+            android:id="@+id/textViewFechaExpedida"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/fecha_receta"
+            android:inputType="date"
+            android:clickable="true"
+            android:focusable="true"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/description"
+            android:layout_marginTop="12dp" />
+
+        <EditText
+            android:id="@+id/editTextDescripcion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/description"
+            android:inputType="textMultiLine"
+            android:minLines="3" />
+
+        <Button
+            android:id="@+id/btnGuardarReceta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/btnLimpiarReceta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/clear"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>

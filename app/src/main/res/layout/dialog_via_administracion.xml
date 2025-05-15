@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/id_via_administracion" />
+
+        <EditText
+            android:id="@+id/editTextIdViaAdministracion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/id_via_administracion"
+            android:inputType="number" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/tipo_via_administracion"
+            android:layout_marginTop="16dp" />
+
+        <EditText
+            android:id="@+id/editTextTipoAdministracion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/tipo_via_administracion" />
+
+        <Button
+            android:id="@+id/btnGuardarViaAdministracion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/btnLimpiarViaAdministracion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/clear"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+</ScrollView>
