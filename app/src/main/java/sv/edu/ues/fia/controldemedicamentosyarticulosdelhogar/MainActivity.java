@@ -9,7 +9,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
-    public static boolean habilitarVerDetalles = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,15 +21,10 @@ public class MainActivity extends AppCompatActivity {
         if (primeraVez) {
             WebServiceHelper ws = new WebServiceHelper(this);
 
-            // Ejecutar los scripts solo una vez
-            ws.ejecutarScript("creation_db_script.sql");
-            ws.ejecutarScript("user_table_filling_script.sql");
-            ws.ejecutarScript("districts_filling_script.sql");
-            ws.ejecutarScript("triggers.sql");
+            ws.ejecutarScript("dummy.sql");
 
             Toast.makeText(this, "Base de datos MySQL inicializada", Toast.LENGTH_SHORT).show();
 
-            // Marcar como ya ejecutado
             preferencias.edit().putBoolean("primera_vez", false).apply();
         }
 
@@ -40,3 +34,4 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 }
+

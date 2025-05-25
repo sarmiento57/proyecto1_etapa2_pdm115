@@ -321,9 +321,6 @@ public class ArticuloDAO {
         return lista;
     }
 
-
-
-
 }
 
 

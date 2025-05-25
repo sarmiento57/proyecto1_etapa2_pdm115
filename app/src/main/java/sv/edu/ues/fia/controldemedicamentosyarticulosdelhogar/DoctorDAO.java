@@ -32,52 +32,51 @@ public class DoctorDAO {
             }
 
             Map<String, String> params = new HashMap<>();
-            params.put("IDDOCTOR", String.valueOf(doctor.getIdDoctor()));
-            params.put("NOMBREDOCTOR", doctor.getNombreDoctor());
-            params.put("ESPECIALIDADDOCTOR", doctor.getEspecialidadDoctor());
-            params.put("JVPM", doctor.getJvpm());
+            params.put("iddoctor", String.valueOf(doctor.getIdDoctor()));
+            params.put("nombredoctor", doctor.getNombreDoctor());
+            params.put("especialidaddoctor", doctor.getEspecialidadDoctor());
+            params.put("jvpm", doctor.getJvpm());
 
-            ws.post("insertar_doctor.php", params,
+            ws.post("/doctor/insertar_doctor.php", params,
                     r -> Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show(),
                     e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show());
         });
     }
 
-
     public void updateDoctor(Doctor doctor) {
         Map<String, String> params = new HashMap<>();
-        params.put("IDDOCTOR", String.valueOf(doctor.getIdDoctor()));
-        params.put("NOMBREDOCTOR", doctor.getNombreDoctor());
-        params.put("ESPECIALIDADDOCTOR", doctor.getEspecialidadDoctor());
-        params.put("JVPM", doctor.getJvpm());
+        params.put("iddoctor", String.valueOf(doctor.getIdDoctor()));
+        params.put("nombredoctor", doctor.getNombreDoctor());
+        params.put("especialidaddoctor", doctor.getEspecialidadDoctor());
+        params.put("jvpm", doctor.getJvpm());
 
-        ws.post("actualizar_doctor.php", params,
+        ws.post("/doctor/actualizar_doctor.php", params,
                 r -> Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show(),
                 e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show());
     }
 
     public void deleteDoctor(int id) {
         Map<String, String> params = new HashMap<>();
-        params.put("IDDOCTOR", String.valueOf(id));
+        params.put("iddoctor", String.valueOf(id));
 
-        ws.post("eliminar_doctor.php", params,
+        ws.post("/doctor/eliminar_doctor.php", params,
                 r -> Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show(),
                 e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show());
     }
 
     public void getDoctor(int id, Response.Listener<Doctor> callback) {
         Map<String, String> params = new HashMap<>();
-        params.put("IDDOCTOR", String.valueOf(id));
+        params.put("iddoctor", String.valueOf(id));
 
-        ws.post("obtener_doctor.php", params,
+        ws.post("/doctor/obtener_doctor.php", params,
                 response -> {
                     try {
                         JSONObject obj = new JSONObject(response);
                         Doctor doctor = new Doctor(
-                                obj.getInt("IDDOCTOR"),
-                                obj.getString("NOMBREDOCTOR"),
-                                obj.getString("ESPECIALIDADDOCTOR"),
-                                obj.getString("JVPM"),
+                                obj.getInt("iddoctor"),
+                                obj.getString("nombredoctor"),
+                                obj.getString("especialidaddoctor"),
+                                obj.getString("jvpm"),
                                 context
                         );
                         callback.onResponse(doctor);
@@ -89,7 +88,7 @@ public class DoctorDAO {
     }
 
     public void getAllDoctors(Response.Listener<List<Doctor>> callback) {
-        ws.post("listar_doctores.php", new HashMap<>(),
+        ws.post("/doctor/listar_doctores.php", new HashMap<>(),
                 response -> {
                     try {
                         JSONArray array = new JSONArray(response);
@@ -97,10 +96,10 @@ public class DoctorDAO {
                         for (int i = 0; i < array.length(); i++) {
                             JSONObject obj = array.getJSONObject(i);
                             list.add(new Doctor(
-                                    obj.getInt("IDDOCTOR"),
-                                    obj.getString("NOMBREDOCTOR"),
-                                    obj.getString("ESPECIALIDADDOCTOR"),
-                                    obj.getString("JVPM"),
+                                    obj.getInt("iddoctor"),
+                                    obj.getString("nombredoctor"),
+                                    obj.getString("especialidaddoctor"),
+                                    obj.getString("jvpm"),
                                     context
                             ));
                         }
@@ -111,28 +110,28 @@ public class DoctorDAO {
                 },
                 e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show());
     }
+
     public void isDuplicate(int idDoctor, Response.Listener<Boolean> callback) {
         Map<String, String> params = new HashMap<>();
-        params.put("IDDOCTOR", String.valueOf(idDoctor));
+        params.put("iddoctor", String.valueOf(idDoctor));
 
-        ws.post("verificar_doctor.php", params,
+        ws.post("/doctor/verificar_doctor.php", params,
                 response -> {
-                    // Esperamos algo como {"existe": true}
                     try {
                         JSONObject obj = new JSONObject(response);
                         boolean existe = obj.getBoolean("existe");
                         callback.onResponse(existe);
                     } catch (Exception e) {
                         Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
-                        callback.onResponse(false); // Por defecto no duplicado si falla
+                        callback.onResponse(false);
                     }
                 },
                 error -> {
                     error.printStackTrace();
                     Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
-                    callback.onResponse(false); // Por defecto no duplicado si falla
+                    callback.onResponse(false);
                 });
     }
-
 }
+
 
