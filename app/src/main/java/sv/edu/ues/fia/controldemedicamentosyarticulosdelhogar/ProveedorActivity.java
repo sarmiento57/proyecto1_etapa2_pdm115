@@ -16,6 +16,8 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.Response;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,8 +36,7 @@ public class ProveedorActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_proveedor);
 
-        SQLiteDatabase conexionDB = new ControlBD(this).getConnection();
-        proveedorDAO = new ProveedorDAO(conexionDB, this);
+        proveedorDAO = new ProveedorDAO(this); // Cambiado para MySQL
 
         TextView txtBusqueda = findViewById(R.id.txtBusquedaProveedor);
 
@@ -66,9 +67,14 @@ public class ProveedorActivity extends AppCompatActivity {
     }
 
     private void fillList() {
-        listaProveedores = proveedorDAO.getAllProveedores();
-        adapterProveedores = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listaProveedores);
-        listViewProveedores.setAdapter(adapterProveedores);
+        proveedorDAO.getAllProveedores(new Response.Listener<List<Proveedor>>() {
+            @Override
+            public void onResponse(List<Proveedor> proveedores) {
+                listaProveedores = proveedores;
+                adapterProveedores = new ArrayAdapter<>(ProveedorActivity.this, android.R.layout.simple_list_item_1, listaProveedores);
+                listViewProveedores.setAdapter(adapterProveedores);
+            }
+        });
     }
 
     private void showAddDialog() {
@@ -90,7 +96,7 @@ public class ProveedorActivity extends AppCompatActivity {
         Button btnGuardarProveedor = dialogView.findViewById(R.id.btnGuardarProveedor);
         Button btnLimpiarProveedor = dialogView.findViewById(R.id.btnLimpiarProveedor);
 
-
+        // Validación
         List<View> vistas = Arrays.asList(edtId, edtNombre, edtTelefono, edtDireccion, edtRubro, edtNumReg, edtNIT, edtGiro);
         List<String> regex = Arrays.asList(
                 "\\d+","[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+", "\\d+", "^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s]+$",
@@ -102,7 +108,6 @@ public class ProveedorActivity extends AppCompatActivity {
                 R.string.only_letters, R.string.only_letters_and_numbers,
                 R.string.nit_format, R.string.only_letters
         );
-
         ValidadorDeCampos validadorDeCampos = new ValidadorDeCampos(this, vistas, regex, errores);
 
         final AlertDialog dialog = builder.create();
@@ -130,8 +135,9 @@ public class ProveedorActivity extends AppCompatActivity {
         String giro = edtGiro.getText().toString().trim();
 
         Proveedor proveedor = new Proveedor(id, nombre, telefono, direccion, rubro, numRegistro, nit, giro, this);
-        proveedorDAO.addProveedor(proveedor);
-        fillList();
+        proveedorDAO.addProveedor(proveedor, response -> {
+            fillList(); // Recargamos la lista de proveedores
+        });
 
         clearFieldsProveedor(edtId, edtNombre, edtTelefono, edtDireccion, edtRubro, edtNumReg, edtNIT, edtGiro);
     }
@@ -145,39 +151,31 @@ public class ProveedorActivity extends AppCompatActivity {
 
         final AlertDialog dialog = builder.create();
 
-        dialogView.findViewById(R.id.buttonView).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(vac.validarAcceso(2))
-                    viewProveedor(proveedor);
-                else
-                    Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
+        dialogView.findViewById(R.id.buttonView).setOnClickListener(v -> {
+            if(vac.validarAcceso(2))
+                viewProveedor(proveedor);
+            else
+                Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
+            dialog.dismiss();
+        });
+        dialogView.findViewById(R.id.buttonEdit).setOnClickListener(v -> {
+            if(vac.validarAcceso(3)) {
+                dialog.dismiss();
+                editProveedor(proveedor);
+            }
+            else {
+                Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
                 dialog.dismiss();
             }
         });
-        dialogView.findViewById(R.id.buttonEdit).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(vac.validarAcceso(3)) {
-                    dialog.dismiss();
-                    editProveedor(proveedor);
-                }
-                else {
-                    Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
-                    dialog.dismiss();
-                }
+        dialogView.findViewById(R.id.buttonDelete).setOnClickListener(v -> {
+            if (vac.validarAcceso(4)) {
+                dialog.dismiss();
+                deleteProveedor(proveedor.getIdProveedor());
             }
-        });
-        dialogView.findViewById(R.id.buttonDelete).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (vac.validarAcceso(4)) {
-                    deleteProveedor(proveedor.getIdProveedor());
-                }
-                else {
-                    Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
-                    dialog.dismiss();
-                }
+            else {
+                Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
+                dialog.dismiss();
             }
         });
 
@@ -274,9 +272,10 @@ public class ProveedorActivity extends AppCompatActivity {
                 proveedor.setNumRegProveedor(edtNumReg.getText().toString());
                 proveedor.setNitProveedor(edtNIT.getText().toString());
                 proveedor.setGiroProveedor(edtGiro.getText().toString());
-                proveedorDAO.updateProveedor(proveedor);
-                fillList();
-                dialog.dismiss();
+                proveedorDAO.updateProveedor(proveedor, response -> {
+                    fillList();
+                    dialog.dismiss();
+                });
             }
         });
 
@@ -284,28 +283,19 @@ public class ProveedorActivity extends AppCompatActivity {
     }
 
     private void deleteProveedor(int idProveedor) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.confirm_delete);
-        builder.setMessage(getString(R.string.confirm_delete_message) + ": " + idProveedor);
-
-        builder.setPositiveButton(R.string.yes, (dialog, which) -> {
-            proveedorDAO.deleteProveedor(idProveedor);
+        proveedorDAO.deleteProveedor(idProveedor, response -> {
             fillList();
         });
-
-        builder.setNegativeButton(R.string.no, ((dialog, which) -> dialog.dismiss()));
-
-        builder.create().show();
     }
 
     private void buscarProveedorPorId(int id) {
-        Proveedor proveedor = proveedorDAO.getProveedorById(id);
-        if(proveedor != null) {
-            viewProveedor(proveedor);
-        }
-        else {
-            Toast.makeText(this, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        }
+        proveedorDAO.getProveedorById(id, proveedor -> {
+            if(proveedor != null) {
+                viewProveedor(proveedor);
+            } else {
+                Toast.makeText(this, R.string.not_found_message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void clearFieldsProveedor(EditText edtId, EditText edtNombre, EditText edtTelefono, EditText edtDireccion, EditText edtRubro,
@@ -320,3 +310,4 @@ public class ProveedorActivity extends AppCompatActivity {
         edtGiro.setText("");
     }
 }
+

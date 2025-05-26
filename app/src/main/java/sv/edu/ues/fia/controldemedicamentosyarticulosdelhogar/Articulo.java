@@ -16,7 +16,7 @@ public class Articulo {
 
     public Articulo(Integer idArticulo, Integer idMarca, Integer idViaAdministracion, Integer idSubCategoria,
                     Integer idFormaFarmaceutica, String nombreArticulo, String descripcionArticulo,
-                    Boolean restringidoArticulo, Double precioArticulo) {
+                    Boolean restringidoArticulo, Double precioArticulo, Context context) {
         this.idArticulo = idArticulo;
         this.idMarca = idMarca;
         this.idViaAdministracion = idViaAdministracion;
@@ -26,6 +26,7 @@ public class Articulo {
         this.descripcionArticulo = descripcionArticulo;
         this.restringidoArticulo = restringidoArticulo;
         this.precioArticulo = precioArticulo;
+        this.context = context;
     }
 
     public Articulo(int idArticulo, String nombreArticulo, Context context) {
@@ -110,7 +111,7 @@ public class Articulo {
     }
 
     public String toString() {
-        if (getIdArticulo() == -1) {
+        if (idArticulo == -1) {
             return context.getString(R.string.select_articulo);
         }
         return "ID Articulo : " + getIdArticulo() + "\n" +"Nombre: " + getNombreArticulo();

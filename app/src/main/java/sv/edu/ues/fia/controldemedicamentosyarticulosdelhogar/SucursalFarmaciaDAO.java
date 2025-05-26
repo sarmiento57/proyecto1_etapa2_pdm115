@@ -6,99 +6,135 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.widget.Toast;
 
+import com.android.volley.Response;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SucursalFarmaciaDAO {
-    private SQLiteDatabase conexionDB;
-    private Context context;
 
+    private final Context context;
+    private final WebServiceHelper ws;
 
-    public SucursalFarmaciaDAO(Context contextApp , SQLiteDatabase conexionDB) {
-        this.context  = contextApp;
-        this.conexionDB = conexionDB;
+    public SucursalFarmaciaDAO(Context context) {
+        this.context = context;
+        this.ws = new WebServiceHelper(context);
     }
 
+    // Agregar Farmacia
+    public void addSucursalFarmacia(SucursalFarmacia sucursal, Response.Listener<String> callback) {
+        getSucursalFarmacia(sucursal.getIdFarmacia(), exists -> {
+            if (exists != null && exists.getIdFarmacia() != 0) {
+                Toast.makeText(context, R.string.farma_exists, Toast.LENGTH_SHORT).show();
+                return;
+            }
 
+            Map<String, String> params = new HashMap<>();
+            params.put("idfarmacia", String.valueOf(sucursal.getIdFarmacia()));
+            params.put("iddireccion", String.valueOf(sucursal.getIdDireccion()));
+            params.put("nombrefarmacia", sucursal.getNombreFarmacia());
 
-//    Agregar Farmacia
-    public void addSucursalFarmacia(SucursalFarmacia sucursalFarmacia) {
-
-
-        if(getSucursalFarmacia(sucursalFarmacia.getIdFarmacia())== null)
-        {
-            ContentValues values = new ContentValues();
-            values.put("IDFARMACIA", sucursalFarmacia.getIdFarmacia());
-            values.put("IDDIRECCION", sucursalFarmacia.getIdDireccion());
-            values.put("NOMBREFARMACIA", sucursalFarmacia.getNombreFarmacia());
-            conexionDB.insert("SUCURSALFARMACIA", null, values);
-            Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
-
-        }
-        else
-        {
-            Toast.makeText(context, R.string.farma_exists, Toast.LENGTH_SHORT).show();
-
-        }
-}
-
-//    Buscar farmacia por id
-    public SucursalFarmacia getSucursalFarmacia(int id) {
-        String sql = "SELECT * FROM SUCURSALFARMACIA WHERE IDFARMACIA = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        if (cursor.moveToFirst()) {
-            SucursalFarmacia sucursalFarmacia = new SucursalFarmacia(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDFARMACIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDIRECCION")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREFARMACIA")),
-                    context
+            ws.post("sucursalfarmacia/insertar_sucursalfarmacia.php", params,
+                    response -> {
+                        Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
+                        callback.onResponse(response);
+                    },
+                    e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
             );
-            cursor.close();
-            return sucursalFarmacia;
-        }
-        cursor.close();
-        return null;
+        });
     }
 
-    // Lista de todas las farmacias
+    // Obtener Farmacia por ID
+    public void getSucursalFarmacia(int id, Response.Listener<SucursalFarmacia> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idfarmacia", String.valueOf(id));
 
-    public List<SucursalFarmacia> getAllSucursalFarmacia() {
-        List<SucursalFarmacia> list = new ArrayList<>();
-        String sql = "SELECT * FROM SUCURSALFARMACIA";
-        Cursor cursor = conexionDB.rawQuery(sql, null);
-        while (cursor.moveToNext()) {
-            list.add(new SucursalFarmacia(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDFARMACIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDIRECCION")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREFARMACIA")),
-                    context
-            ));
-        }
-        cursor.close();
-        return list;
+        ws.post("sucursalfarmacia/obtener_sucursalfarmacia.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        if (obj.has("idfarmacia")) {
+                            SucursalFarmacia sucursal = new SucursalFarmacia(
+                                    obj.getInt("idfarmacia"),
+                                    obj.getInt("iddireccion"),
+                                    obj.getString("nombrefarmacia"),
+                                    context);
+                            callback.onResponse(sucursal);
+                        } else {
+                            callback.onResponse(null);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(null);
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(null);
+                });
     }
 
-    // Modificar Farmacia
-
-    public void updateSucursalFarmacia(SucursalFarmacia sucursalFarmacia) {
-        ContentValues values = new ContentValues();
-        values.put("NOMBREFARMACIA", sucursalFarmacia.getNombreFarmacia());
-        int rowsAffected = conexionDB.update("SUCURSALFARMACIA", values, "IDFARMACIA = ?",
-                new String[]{String.valueOf(sucursalFarmacia.getIdFarmacia())});
-
-        if (rowsAffected == 0) {
-            Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
-        }
-
+    // Listar todas las farmacias
+    public void getAllSucursalFarmacia(Response.Listener<List<SucursalFarmacia>> callback) {
+        ws.post("sucursalfarmacia/listar_sucursalfarmacia.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<SucursalFarmacia> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new SucursalFarmacia(
+                                    obj.getInt("idfarmacia"),
+                                    obj.getInt("iddireccion"),
+                                    obj.getString("nombrefarmacia"),
+                                    context));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
     }
 
+    // Actualizar Farmacia
+    public void updateSucursalFarmacia(SucursalFarmacia sucursal, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idfarmacia", String.valueOf(sucursal.getIdFarmacia()));
+        params.put("nombrefarmacia", sucursal.getNombreFarmacia());
 
-    // eliminar Farmacia
+        ws.post("sucursalfarmacia/actualizar_sucursalfarmacia.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+        );
+    }
 
-    public int eliminarSucursal(int idFarmacia) {
-        return conexionDB.delete("SUCURSALFARMACIA", "IDFARMACIA = ?",
-                new String[]{String.valueOf(idFarmacia)});
+    // Eliminar Farmacia
+    public void eliminarSucursal(int id, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idfarmacia", String.valueOf(id));
+
+        ws.post("sucursalfarmacia/eliminar_sucursalfarmacia.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+        );
     }
 }
+

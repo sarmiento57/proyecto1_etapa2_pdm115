@@ -8,237 +8,315 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.content.Context;
+import android.widget.Toast;
+import com.android.volley.Response;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class DetalleCompraDAO {
-    private SQLiteDatabase conexionDB;
-    private Context context;
 
-    public DetalleCompraDAO(SQLiteDatabase conexionDB, Context context) {
-        this.conexionDB = conexionDB;
+    private final Context context;
+    private final WebServiceHelper ws;
+
+    public DetalleCompraDAO(Context context) {
         this.context = context;
+        this.ws = new WebServiceHelper(context);
     }
 
-    public void addDetalleCompra(DetalleCompra detalleCompra) {
-        if (isDuplicateIdDetalle(detalleCompra.getIdDetalleCompra())) {
-            Toast.makeText(context, R.string.duplicate_iddetalle_message, Toast.LENGTH_SHORT).show();
-            return;
-        }
+    public void addDetalleCompra(DetalleCompra detalleCompra, Response.Listener<String> callback) {
+        // Verifica si el ID ya existe
+        isDuplicateIdDetalle(detalleCompra.getIdDetalleCompra(), existsId -> {
+            if (existsId) {
+                Toast.makeText(context, R.string.duplicate_iddetalle_message, Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        if (!existeDetalleExistencia(detalleCompra.getIdArticulo(), detalleCompra.getIdCompra())) {
-            Toast.makeText(context, context.getString(R.string.error_detalle_existencia_no_encontrado), Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        int idExistente = getIdDetalleCompraExistente(
-                detalleCompra.getIdCompra(),
-                detalleCompra.getIdArticulo(),
-                detalleCompra.getPrecioUnitarioCompra()
-        );
-
-        if (idExistente != -1) {
-            String sql = "UPDATE DETALLECOMPRA SET CANTIDADCOMPRA = CANTIDADCOMPRA + ?, " +
-                    "TOTALDETALLECOMPRA = TOTALDETALLECOMPRA + ? WHERE IDDETALLECOMPRA = ?";
-            conexionDB.execSQL(sql, new Object[]{
-                    detalleCompra.getCantidadCompra(),
-                    detalleCompra.getTotalDetalleCompra(),
-                    idExistente
-            });
-
-            Toast.makeText(context,
-                    context.getString(R.string.stock_updated_message) + idExistente,
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        ContentValues values = new ContentValues();
-        values.put("IDCOMPRA", detalleCompra.getIdCompra());
-        values.put("IDARTICULO", detalleCompra.getIdArticulo());
-        values.put("IDDETALLECOMPRA", detalleCompra.getIdDetalleCompra());
-        values.put("FECHADECOMPRA", detalleCompra.getFechaDeCompra());
-        values.put("PRECIOUNITARIOCOMPRA", detalleCompra.getPrecioUnitarioCompra());
-        values.put("CANTIDADCOMPRA", detalleCompra.getCantidadCompra());
-        values.put("TOTALDETALLECOMPRA", detalleCompra.getTotalDetalleCompra());
-
-        conexionDB.insert("DETALLECOMPRA", null, values);
-        Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
-    }
-
-    public void updateDetalleCompra(DetalleCompra detalleCompra) {
-
-        ContentValues values = new ContentValues();
-        values.put("IDARTICULO", detalleCompra.getIdArticulo());
-        values.put("FECHADECOMPRA", detalleCompra.getFechaDeCompra());
-        values.put("PRECIOUNITARIOCOMPRA", detalleCompra.getPrecioUnitarioCompra());
-        values.put("CANTIDADCOMPRA", detalleCompra.getCantidadCompra());
-        values.put("TOTALDETALLECOMPRA", detalleCompra.getTotalDetalleCompra());
-
-        int rowsAffected = conexionDB.update(
-                "DETALLECOMPRA",
-                values,
-                "IDCOMPRA = ? AND IDDETALLECOMPRA = ?",
-                new String[]{
-                        String.valueOf(detalleCompra.getIdCompra()),
-                        String.valueOf(detalleCompra.getIdDetalleCompra())
+            // Verifica si existe un detalle de existencia relacionado
+            existeDetalleExistencia(detalleCompra.getIdArticulo(), detalleCompra.getIdCompra(), existsExistencia -> {
+                if (!existsExistencia) {
+                    Toast.makeText(context, context.getString(R.string.error_detalle_existencia_no_encontrado), Toast.LENGTH_SHORT).show();
+                    return;
                 }
+
+                // Prepara los parámetros para la solicitud
+                Map<String, String> params = new HashMap<>();
+                params.put("idcompra", String.valueOf(detalleCompra.getIdCompra()));
+                params.put("idarticulo", String.valueOf(detalleCompra.getIdArticulo()));
+                params.put("iddetallecompra", String.valueOf(detalleCompra.getIdDetalleCompra()));
+                params.put("fechadecompra", detalleCompra.getFechaDeCompra());
+                params.put("preciounitariocompra", String.valueOf(detalleCompra.getPrecioUnitarioCompra()));
+                params.put("cantidadcompra", String.valueOf(detalleCompra.getCantidadCompra()));
+                params.put("totaldetallecompra", String.valueOf(detalleCompra.getTotalDetalleCompra()));
+
+                // Realiza la solicitud POST al servidor
+                ws.post("detallecompra/insertar_detallecompra.php", params,
+                        response -> {
+                            Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
+                            callback.onResponse(response);
+                        },
+                        error -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+                );
+            });
+        });
+    }
+
+
+    public void updateDetalleCompra(DetalleCompra detalleCompra, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idcompra", String.valueOf(detalleCompra.getIdCompra()));
+        params.put("iddetallecompra", String.valueOf(detalleCompra.getIdDetalleCompra()));
+        params.put("idarticulo", String.valueOf(detalleCompra.getIdArticulo()));
+        params.put("fechadecompra", detalleCompra.getFechaDeCompra());
+        params.put("preciounitariocompra", String.valueOf(detalleCompra.getPrecioUnitarioCompra()));
+        params.put("cantidadcompra", String.valueOf(detalleCompra.getCantidadCompra()));
+        params.put("totaldetallecompra", String.valueOf(detalleCompra.getTotalDetalleCompra()));
+
+        ws.post("detallecompra/actualizar_detallecompra.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                error -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
         );
-
-        if (rowsAffected == 0) {
-            Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
-        }
     }
 
-    public void deleteDetalleCompra(int idDetalle) {
-        int rowsAffected = conexionDB.delete("DETALLECOMPRA", "IDDETALLECOMPRA = ?", new String[]{String.valueOf(idDetalle)});
+    public void deleteDetalleCompra(int idDetalleCompra, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddetallecompra", String.valueOf(idDetalleCompra));
 
-        if (rowsAffected == 0) {
-            Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show();
-        }
+        ws.post("detallecompra/eliminar_detallecompra.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                error -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+        );
     }
 
-    public List<DetalleCompra> getAllDetalleCompra() {
-        List<DetalleCompra> detalleCompraList = new ArrayList<>();
-        String sql = "SELECT * FROM DETALLECOMPRA";
-        Cursor cursor = conexionDB.rawQuery(sql, null);
-        while (cursor.moveToNext()) {
-            DetalleCompra detalle = new DetalleCompra(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDCOMPRA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDETALLECOMPRA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("FECHADECOMPRA")),
-                    cursor.getDouble(cursor.getColumnIndexOrThrow("PRECIOUNITARIOCOMPRA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("CANTIDADCOMPRA")),
-                    cursor.getDouble(cursor.getColumnIndexOrThrow("TOTALDETALLECOMPRA")),
-                    context
-            );
-            detalleCompraList.add(detalle);
-        }
-        cursor.close();
-        return detalleCompraList;
+    public void getAllDetalleCompra(Response.Listener<List<DetalleCompra>> callback) {
+        ws.post("detallecompra/listar_detallecompra.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<DetalleCompra> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new DetalleCompra(
+                                    obj.getInt("idcompra"),
+                                    obj.getInt("idarticulo"),
+                                    obj.getInt("iddetallecompra"),
+                                    obj.getString("fechadecompra"),
+                                    obj.getDouble("preciounitariocompra"),
+                                    obj.getInt("cantidadcompra"),
+                                    obj.getDouble("totaldetallecompra"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(list);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        callback.onResponse(new ArrayList<>());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(new ArrayList<>());
+                });
     }
 
-    public DetalleCompra getDetalleCompra(int idDetalleCompra) {
-        String sql = "SELECT * FROM DETALLECOMPRA WHERE IDDETALLECOMPRA = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(idDetalleCompra)});
+    public void getDetalleCompra(int idDetalleCompra, Response.Listener<DetalleCompra> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddetallecompra", String.valueOf(idDetalleCompra));
 
-        if(cursor.moveToFirst()){
-            DetalleCompra detalleCompra = new DetalleCompra(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDCOMPRA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDETALLECOMPRA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("FECHADECOMPRA")),
-                    cursor.getDouble(cursor.getColumnIndexOrThrow("PRECIOUNITARIOCOMPRA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("CANTIDADCOMPRA")),
-                    cursor.getDouble(cursor.getColumnIndexOrThrow("TOTALDETALLECOMPRA")),
-                    context
-            );
-            cursor.close();
-            return detalleCompra;
-        }
-
-        cursor.close();
-        Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        return null;
+        ws.post("detallecompra/get_detallecompra.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        DetalleCompra detalleCompra = new DetalleCompra(
+                                obj.getInt("idcompra"),
+                                obj.getInt("idarticulo"),
+                                obj.getInt("iddetallecompra"),
+                                obj.getString("fechadecompra"),
+                                obj.getDouble("preciounitariocompra"),
+                                obj.getInt("cantidadcompra"),
+                                obj.getDouble("totaldetallecompra"),
+                                context
+                        );
+                        callback.onResponse(detalleCompra);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        callback.onResponse(null);
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(null);
+                });
     }
 
-    public List<FacturaCompra> getAllFacturaCompra() {
-        List<FacturaCompra> lista = new ArrayList<>();
-        String sql = "SELECT * FROM FACTURACOMPRA";
-        Cursor cursor = conexionDB.rawQuery(sql, null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                int idCompra = cursor.getInt(cursor.getColumnIndexOrThrow("IDCOMPRA"));
-                int idProveedor = cursor.getInt(cursor.getColumnIndexOrThrow("IDPROVEEDOR"));
-                String fechaCompra = cursor.getString(cursor.getColumnIndexOrThrow("FECHACOMPRA"));
-
-                lista.add(new FacturaCompra(idCompra, idProveedor, fechaCompra, context));
-            } while (cursor.moveToNext());
-        }
-
-        cursor.close();
-        return lista;
+    private void isDuplicateIdDetalle(int idDetalleCompra, Response.Listener<Boolean> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddetallecompra", String.valueOf(idDetalleCompra));
+        ws.post("detallecompra/verificar_detallecompra.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        callback.onResponse(obj.optBoolean("existe", false));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        callback.onResponse(false);
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(false);
+                });
     }
 
-    public List<Articulo> getAllArticulo() {
-        List<Articulo> lista = new ArrayList<>();
-        String sql = "SELECT * FROM ARTICULO";
-        Cursor cursor = conexionDB.rawQuery(sql, null);
+    private void existeDetalleExistencia(int idArticulo, int idCompra, Response.Listener<Boolean> callback) {
+        // Obtener la Farmacia de la Factura Compra
+        getFacturaFarmacia(idCompra, farmaciaId -> {
+            if (farmaciaId != -1) {
+                // Verificar si existe un Detalle Existencia con la misma Farmacia y Artículo
+                Map<String, String> params = new HashMap<>();
+                params.put("idarticulo", String.valueOf(idArticulo));
+                params.put("idfarmacia", String.valueOf(farmaciaId));
 
-        if (cursor.moveToFirst()) {
-            do {
-                int idCompra = cursor.getInt(cursor.getColumnIndexOrThrow("IDARTICULO"));
-                String nombreArticulo = cursor.getString(cursor.getColumnIndexOrThrow("NOMBREARTICULO"));
-                lista.add(new Articulo(idCompra, nombreArticulo,  context));
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        return lista;
-    }
-
-    public List<DetalleCompra> getDetallesCompra(int idCompra) {
-        List<DetalleCompra> detalles = new ArrayList<>();
-        String sql = "SELECT * FROM DETALLECOMPRA WHERE IDCOMPRA = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(idCompra)});
-
-        while (cursor.moveToNext()) {
-            detalles.add(new DetalleCompra(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDCOMPRA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDETALLECOMPRA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("FECHADECOMPRA")),
-                    cursor.getDouble(cursor.getColumnIndexOrThrow("PRECIOUNITARIOCOMPRA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("CANTIDADCOMPRA")),
-                    cursor.getDouble(cursor.getColumnIndexOrThrow("TOTALDETALLECOMPRA")),
-                    context
-            ));
-        }
-
-        cursor.close();
-        return detalles;
-    }
-
-    private boolean isDuplicateIdDetalle(int idDetalleCompra) {
-        String sql = "SELECT 1 FROM DETALLECOMPRA WHERE IDDETALLECOMPRA = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(idDetalleCompra)});
-        boolean exists = cursor.moveToFirst();
-        cursor.close();
-        return exists;
-    }
-
-    private int getIdDetalleCompraExistente(int idCompra, int idArticulo, double precioUnitario) {
-        String sql = "SELECT IDDETALLECOMPRA FROM DETALLECOMPRA WHERE IDCOMPRA = ? AND IDARTICULO = ? AND PRECIOUNITARIOCOMPRA = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{
-                String.valueOf(idCompra),
-                String.valueOf(idArticulo),
-                String.valueOf(precioUnitario)
+                ws.post("detallecompra/verificar_existencia.php", params,
+                        response -> {
+                            try {
+                                JSONObject obj = new JSONObject(response);
+                                boolean exists = obj.optBoolean("existe", false);
+                                callback.onResponse(exists);  // Devolver true o false
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                callback.onResponse(false);
+                            }
+                        },
+                        error -> {
+                            Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                            callback.onResponse(false);
+                        });
+            } else {
+                // En caso de error al obtener la farmacia de la factura
+                callback.onResponse(false);
+            }
         });
-
-        int idDetalle = -1;
-        if (cursor.moveToFirst()) {
-            idDetalle = cursor.getInt(0);
-        }
-        cursor.close();
-        return idDetalle;
     }
 
-    private boolean existeDetalleExistencia(int idArticulo, int idCompra) {
-        String query = "SELECT 1 " +
-                "FROM DETALLEEXISTENCIA DE " +
-                "INNER JOIN FACTURACOMPRA FC ON DE.IDFARMACIA = FC.IDFARMACIA " +
-                "WHERE DE.IDARTICULO = ? AND FC.IDCOMPRA = ?";
+    private void getFacturaFarmacia(int idCompra, Response.Listener<Integer> callback) {
+        // Obtener la Farmacia asociada con la Factura Compra
+        Map<String, String> params = new HashMap<>();
+        params.put("idcompra", String.valueOf(idCompra));
 
-        Cursor cursor = conexionDB.rawQuery(query, new String[]{
-                String.valueOf(idArticulo),
-                String.valueOf(idCompra)
-        });
-
-        boolean existe = cursor.moveToFirst();
-        cursor.close();
-        return existe;
+        ws.post("detallecompra/get_farmacia.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        int farmaciaId = obj.optInt("idfarmacia", -1);  // Si no encuentra la farmacia, devuelve -1
+                        callback.onResponse(farmaciaId);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        callback.onResponse(-1);  // Error en la consulta, devuelve -1
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(-1);  // Error en la consulta, devuelve -1
+                });
     }
 
+    public void getAllFacturaCompra(Response.Listener<List<FacturaCompra>> callback) {
+        ws.post("detallecompra/listar_facturacompra.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<FacturaCompra> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new FacturaCompra(
+                                    obj.getInt("idcompra"),
+                                    obj.getInt("idproveedor"),
+                                    obj.getString("fechacompra"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(list);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        callback.onResponse(new ArrayList<>());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(new ArrayList<>());
+                });
+    }
+
+    public void getAllArticulo(Response.Listener<List<Articulo>> callback) {
+        ws.post("detallecompra/listar_articulo.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<Articulo> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new Articulo(
+                                    obj.getInt("idarticulo"),
+                                    obj.getString("nombrearticulo"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(list);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        callback.onResponse(new ArrayList<>());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(new ArrayList<>());
+                });
+    }
+
+    public void getDetallesCompra(int idCompra, Response.Listener<List<DetalleCompra>> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idcompra", String.valueOf(idCompra));
+
+        ws.post("detallecompra/listar_detalles_compra.php", params,
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<DetalleCompra> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new DetalleCompra(
+                                    obj.getInt("idcompra"),
+                                    obj.getInt("idarticulo"),
+                                    obj.getInt("iddetallecompra"),
+                                    obj.getString("fechadecompra"),
+                                    obj.getDouble("preciounitariocompra"),
+                                    obj.getInt("cantidadcompra"),
+                                    obj.getDouble("totaldetallecompra"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(list);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        callback.onResponse(new ArrayList<>());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(new ArrayList<>());
+                });
+    }
 }
+
 

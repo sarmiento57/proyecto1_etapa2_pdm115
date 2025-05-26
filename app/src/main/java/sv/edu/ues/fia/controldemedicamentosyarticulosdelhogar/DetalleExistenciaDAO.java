@@ -6,210 +6,276 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.widget.Toast;
 
+import com.android.volley.Response;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DetalleExistenciaDAO {
 
-    private SQLiteDatabase conexionDB;
-    private Context context;
+    private final Context context;
+    private final WebServiceHelper ws;
 
-
-
-    public DetalleExistenciaDAO(SQLiteDatabase conexionDB, Context context) {
-        this.conexionDB = conexionDB;
+    public DetalleExistenciaDAO(Context context) {
         this.context = context;
+        this.ws = new WebServiceHelper(context);
     }
 
-
-    public void addExistencia(DetalleExistencia detalleExistencia)
-    {
-        if (isDuplicate(detalleExistencia.getIdDetalleExistencia())) {
-            Toast.makeText(context, R.string.duplicate_message, Toast.LENGTH_SHORT).show();
-            return;
-        }else {
-            if (isUsed(detalleExistencia)) {
-                Toast.makeText(context, R.string.duplicate_message , Toast.LENGTH_SHORT).show();
+    public void addExistencia(DetalleExistencia detalleExistencia, Response.Listener<String> callback) {
+        isDuplicate(detalleExistencia.getIdDetalleExistencia(), exists -> {
+            if (exists) {
+                Toast.makeText(context, R.string.duplicate_message, Toast.LENGTH_SHORT).show();
                 return;
             }
-            else {
+            isUsed(detalleExistencia, used -> {
+                if (used) {
+                    Toast.makeText(context, R.string.duplicate_message, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                Map<String, String> params = new HashMap<>();
+                params.put("idarticulo", String.valueOf(detalleExistencia.getIdArticulo()));
+                params.put("iddetalleexistencia", String.valueOf(detalleExistencia.getIdDetalleExistencia()));
+                params.put("idfarmacia", String.valueOf(detalleExistencia.getIdFarmacia()));
+                params.put("cantidadexistencia", String.valueOf(detalleExistencia.getCantidadExistencia()));
+                params.put("fechadevencimiento", detalleExistencia.getFechaDeVencimiento());
 
-
-                ContentValues values = new ContentValues();
-                values.put("IDARTICULO", detalleExistencia.getIdArticulo());
-                values.put("IDDETALLEEXISTENCIA", detalleExistencia.getIdDetalleExistencia());
-                values.put("IDFARMACIA", detalleExistencia.getIdFarmacia());
-                values.put("CANTIDADEXISTENCIA", detalleExistencia.getCantidadExistencia());
-                values.put("FECHADEVENCIMIENTO", detalleExistencia.getFechaDeVencimiento());
-                conexionDB.insert("DETALLEEXISTENCIA", null, values);
-                Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
-
-
-
-
-            }
-        }
-
-    }
-
-
-    public void updateExistencia(DetalleExistencia detalleExistencia)
-    {
-
-        ContentValues values = new ContentValues();
-        values.put("CANTIDADEXISTENCIA", detalleExistencia.getCantidadExistencia());
-        values.put("FECHADEVENCIMIENTO", detalleExistencia.getFechaDeVencimiento());
-        int rowsAffected = conexionDB.update("DETALLEEXISTENCIA", values, "IDDETALLEEXISTENCIA = ?",
-                new String[]{String.valueOf(detalleExistencia.getIdDetalleExistencia())});
-        if (rowsAffected == 0) {
-            Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-
-    public List<DetalleExistencia> getAllDetallesExistencia(){
-        List<DetalleExistencia> list = new ArrayList<>();
-        String sql = "SELECT * FROM DETALLEEXISTENCIA";
-        Cursor cursor = conexionDB.rawQuery(sql, null);
-        while (cursor.moveToNext()) {
-            list.add(new DetalleExistencia(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDETALLEEXISTENCIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDFARMACIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("CANTIDADEXISTENCIA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("FECHADEVENCIMIENTO")),
-                    context
-
-
-            ));
-        }
-        cursor.close();
-        return list;
-    }
-
-
-    public List<Articulo> getAllArticulos(){
-        List<Articulo> list = new ArrayList<>();
-        String sql = "SELECT * FROM ARTICULO";
-        Cursor cursor = conexionDB.rawQuery(sql, null);
-        while (cursor.moveToNext()) {
-            list.add(new Articulo(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDMARCA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDVIAADMINISTRACION")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDSUBCATEGORIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDFORMAFARMACEUTICA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREARTICULO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("DESCRIPCIONARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("RESTRINGIDOARTICULO")) == 1,
-                    cursor.getDouble(cursor.getColumnIndexOrThrow("PRECIOARTICULO"))
-            ));
-        }
-        cursor.close();
-        return list;
-    }
-
-
-    public Articulo getArticulo(int id)
-    {
-        String sql = "SELECT * FROM ARTICULO WHERE IDARTICULO = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        if (cursor.moveToFirst()) {
-            Articulo articulo = new Articulo(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDMARCA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDVIAADMINISTRACION")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDSUBCATEGORIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDFORMAFARMACEUTICA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREARTICULO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("DESCRIPCIONARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("RESTRINGIDOARTICULO")) == 1,
-                    cursor.getDouble(cursor.getColumnIndexOrThrow("PRECIOARTICULO"))
-            );
-            cursor.close();
-            return articulo;
-        }
-            cursor.close();
-            Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-            return null;
-
-    }
-
-
-    private boolean isDuplicate(int id) {
-        String sql = "SELECT 1 FROM DETALLEEXISTENCIA WHERE IDDETALLEEXISTENCIA = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        boolean exists = cursor.moveToFirst();
-        cursor.close();
-        return exists;
-    }
-
-    private boolean isUsed(DetalleExistencia detalleExistencia) {
-        String sql = "SELECT 1 FROM DETALLEEXISTENCIA WHERE IDARTICULO = ? AND IDFARMACIA = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{
-                String.valueOf(detalleExistencia.getIdArticulo()),
-                String.valueOf(detalleExistencia.getIdFarmacia())
+                ws.post("detalleexistencia/insertar_detalleexistencia.php", params,
+                        response -> {
+                            Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
+                            callback.onResponse(response);
+                        },
+                        e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+                );
+            });
         });
-        boolean exists = cursor.moveToFirst();
-        cursor.close();
-        return exists;
+    }
+
+    public void updateExistencia(DetalleExistencia detalleExistencia, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddetalleexistencia", String.valueOf(detalleExistencia.getIdDetalleExistencia()));
+        params.put("cantidadexistencia", String.valueOf(detalleExistencia.getCantidadExistencia()));
+        params.put("fechadevencimiento", detalleExistencia.getFechaDeVencimiento());
+
+        ws.post("detalleexistencia/actualizar_detalleexistencia.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    public void getAllDetallesExistencia(Response.Listener<List<DetalleExistencia>> callback) {
+        ws.post("detalleexistencia/listar_detalleexistencia.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<DetalleExistencia> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new DetalleExistencia(
+                                    obj.getInt("idarticulo"),
+                                    obj.getInt("iddetalleexistencia"),
+                                    obj.getInt("idfarmacia"),
+                                    obj.getInt("cantidadexistencia"),
+                                    obj.getString("fechadevencimiento"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
+    }
+
+    public void getAllDetallesExistenciaByIdArticulo(int id, Response.Listener<List<DetalleExistencia>> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idarticulo", String.valueOf(id));
+        ws.post("detalleexistencia/listar_por_articulo.php", params,
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<DetalleExistencia> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new DetalleExistencia(
+                                    obj.getInt("idarticulo"),
+                                    obj.getInt("iddetalleexistencia"),
+                                    obj.getInt("idfarmacia"),
+                                    obj.getInt("cantidadexistencia"),
+                                    obj.getString("fechadevencimiento"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
+    }
+
+    public void getAllDetallesExistenciaByIdFarm(int id, Response.Listener<List<DetalleExistencia>> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idfarmacia", String.valueOf(id));
+        ws.post("detalleexistencia/listar_por_farmacia.php", params,
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<DetalleExistencia> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new DetalleExistencia(
+                                    obj.getInt("idarticulo"),
+                                    obj.getInt("iddetalleexistencia"),
+                                    obj.getInt("idfarmacia"),
+                                    obj.getInt("cantidadexistencia"),
+                                    obj.getString("fechadevencimiento"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
+    }
+
+    public void getAllArticulos(Response.Listener<List<Articulo>> callback) {
+        ws.post("detalleexistencia/listar_articulos.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<Articulo> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new Articulo(
+                                    obj.getInt("idarticulo"),
+                                    obj.getString("nombrearticulo"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
     }
 
 
 
-    public List<DetalleExistencia> getAllDetallesExistenciaByIdArticulo(int id){
-        List<DetalleExistencia> list = new ArrayList<>();
-        String sql = "SELECT * FROM DETALLEEXISTENCIA WHERE IDARTICULO = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        while (cursor.moveToNext()) {
-            list.add(new DetalleExistencia(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDETALLEEXISTENCIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDFARMACIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("CANTIDADEXISTENCIA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("FECHADEVENCIMIENTO")),
-                    context
-
-            ));
-        }
-        cursor.close();
-        return list;
+    public void getArticulo(int id, Response.Listener<Articulo> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idarticulo", String.valueOf(id));
+        ws.post("articulo/obtener_articulo.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        if (obj.has("idarticulo")) {
+                            Articulo articulo = new Articulo(
+                                    obj.getInt("idarticulo"),
+                                    obj.getInt("idmarca"),
+                                    obj.getInt("idviaadministracion"),
+                                    obj.getInt("idsubcategoria"),
+                                    obj.getInt("idformafarmaceutica"),
+                                    obj.getString("nombrearticulo"),
+                                    obj.getString("descripcionarticulo"),
+                                    obj.getInt("restringidoarticulo") == 1,
+                                    obj.getDouble("precioarticulo"),
+                                    context
+                            );
+                            callback.onResponse(articulo);
+                        } else {
+                            callback.onResponse(null);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(null);
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(null);
+                });
     }
 
-    public List<DetalleExistencia> getAllDetallesExistenciaByIdFarm(int id){
-        List<DetalleExistencia> list = new ArrayList<>();
-        String sql = "SELECT * FROM DETALLEEXISTENCIA WHERE IDFARMACIA = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        while (cursor.moveToNext()) {
-            list.add(new DetalleExistencia(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDARTICULO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDETALLEEXISTENCIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDFARMACIA")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("CANTIDADEXISTENCIA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("FECHADEVENCIMIENTO")),
-                    context
+    public void deleteExistencia(int id, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddetalleexistencia", String.valueOf(id));
 
-
-            ));
-        }
-        cursor.close();
-        return list;
+        ws.post("detalleexistencia/eliminar_detalleexistencia.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+        );
     }
 
-
-    public void deleteExistencia(int id)
-    {
-
-        int rowsAffected = conexionDB.delete("DETALLEEXISTENCIA", "IDDETALLEEXISTENCIA = ?", new String[]{String.valueOf(id)});
-        if (rowsAffected == 0) {
-            Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show();
-        }
-
+    private void isDuplicate(int id, Response.Listener<Boolean> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddetalleexistencia", String.valueOf(id));
+        ws.post("detalleexistencia/verificar_detalleexistencia.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        callback.onResponse(obj.optBoolean("existe", false));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(false);
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(false);
+                });
     }
 
-
+    private void isUsed(DetalleExistencia detalleExistencia, Response.Listener<Boolean> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idarticulo", String.valueOf(detalleExistencia.getIdArticulo()));
+        params.put("idfarmacia", String.valueOf(detalleExistencia.getIdFarmacia()));
+        ws.post("detalleexistencia/verificar_existencia.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        callback.onResponse(obj.optBoolean("usado", false));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(false);
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(false);
+                });
+    }
 }
+

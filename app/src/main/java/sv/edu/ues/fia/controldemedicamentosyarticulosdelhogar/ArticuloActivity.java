@@ -419,7 +419,7 @@ public class ArticuloActivity extends AppCompatActivity implements AdapterView.O
                 boolean restringido = isRestricted.isChecked();
                 double precio = Double.parseDouble(precioTexto);
 
-                Articulo art = new Articulo(id, brand, ROA, subCat, PF, nombre, descripcion, restringido, precio);
+                Articulo art = new Articulo(id, brand, ROA, subCat, PF, nombre, descripcion, restringido, precio, this);
                 boolean exito = articuloDAO.insertarArticulo(art);
                 if (exito) {
                     dialog.dismiss();

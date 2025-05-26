@@ -7,212 +7,310 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.android.volley.Response;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DireccionDAO {
 
-    private SQLiteDatabase conexionDB;
-    private Context context;
+    private final Context context;
+    private final WebServiceHelper ws;
 
-    public DireccionDAO(SQLiteDatabase conexionDB, Context context) {
-        this.conexionDB = conexionDB;
+    public DireccionDAO(Context context) {
         this.context = context;
+        this.ws = new WebServiceHelper(context);
     }
 
-    public void addDireccion(Direccion direccion) {
-        if (isDuplicate(direccion.getIdDireccion())) {
-            Toast.makeText(context, R.string.duplicate_message, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        ContentValues values = new ContentValues();
-        values.put("IDDIRECCION", direccion.getIdDireccion());
-        values.put("IDDISTRITO", direccion.getIdDistrito());
-        values.put("DIRECCIONEXACTA", direccion.getDireccionExacta());
-        conexionDB.insert("DIRECCION", null, values);
-        Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
-    }
-
-    public Direccion getDireccion(int id) {
-        String sql = "SELECT * FROM DIRECCION WHERE IDDIRECCION = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        if (cursor.moveToFirst()) {
-            Direccion direccion = new Direccion(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDIRECCION")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDISTRITO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("DIRECCIONEXACTA")),
-                    context
-            );
-            cursor.close();
-            return direccion;
-        }
-        cursor.close();
-        Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        return null;
-    }
-
-
-
-    public List<Direccion> getAllDireccion() {
-        List<Direccion> list = new ArrayList<>();
-        String sql = "SELECT * FROM DIRECCION";
-        Cursor cursor = conexionDB.rawQuery(sql, null);
-        while (cursor.moveToNext()) {
-            list.add(new Direccion(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDIRECCION")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDISTRITO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("DIRECCIONEXACTA")),
-                    context
-            ));
-        }
-        cursor.close();
-        return list;
-    }
-
-
-
-    public List<Departamento> getAllDepartamentos() {
-        List<Departamento> departamentos = new ArrayList<>();
-        String sql = "SELECT * FROM DEPARTAMENTO";
-        Cursor cursor = conexionDB.rawQuery(sql, null);
-        while (cursor.moveToNext()) {
-            departamentos.add(new Departamento(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDEPARTAMENTO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREDEPARTAMENTO"))
-            ));
-        }
-        cursor.close();
-        return departamentos;
-    }
-
-
-    public Departamento getDepartamento(int id) {
-        String sql = "SELECT * FROM DEPARTAMENTO WHERE IDDEPARTAMENTO = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        if (cursor.moveToFirst()) {
-            Departamento departamento= new Departamento(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDEPARTAMENTO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREDEPARTAMENTO"))
-            );
-            cursor.close();
-            return departamento;
-        }
-        cursor.close();
-        Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        return null;
-    }
-
-
-    public Municipio getMunicipio(int id) {
-        String sql = "SELECT * FROM MUNICIPIO WHERE IDMUNICIPIO = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        if (cursor.moveToFirst()) {
-            Municipio municipio= new Municipio(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDMUNICIPIO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDEPARTAMENTO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREMUNICIPIO"))
-            );
-            cursor.close();
-            return municipio;
-        }
-        cursor.close();
-        Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        return null;
-    }
-
-
-    public Distrito getDistrito(int id) {
-        String sql = "SELECT * FROM DISTRITO WHERE IDDISTRITO = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        if (cursor.moveToFirst()) {
-            Distrito distrito= new Distrito(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDISTRITO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDMUNICIPIO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREDISTRITO"))
-            );
-            cursor.close();
-            return distrito;
-        }
-        cursor.close();
-        Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        return null;
-    }
-
-    public List<Municipio> getAllMunicipios(int id) {
-
-        List<Municipio> municipios = new ArrayList<>();
-        String sql = "SELECT * FROM MUNICIPIO WHERE IDDEPARTAMENTO = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        while (cursor.moveToNext()) {
-            municipios.add(new Municipio(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDMUNICIPIO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDEPARTAMENTO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREMUNICIPIO"))
-            ));
-        }
-        cursor.close();
-
-        return municipios;
-    }
-
-    public List<Distrito> getAllDistritos(int id) {
-
-        List<Distrito> distritos = new ArrayList<>();
-        String sql = "SELECT * FROM DISTRITO WHERE IDMUNICIPIO = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        while (cursor.moveToNext()) {
-            distritos.add(new Distrito(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDISTRITO")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDMUNICIPIO")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("NOMBREDISTRITO"))
-            ));
-        }
-        cursor.close();
-
-        return distritos;
-    }
-
-
-
-
-
-    public void updateDireccion(Direccion direccion) {
-        ContentValues values = new ContentValues();
-        values.put("IDDISTRITO", direccion.getIdDistrito());
-        values.put("DIRECCIONEXACTA", direccion.getDireccionExacta());
-        int rowsAffected = conexionDB.update("DIRECCION", values, "IDDIRECCION = ?",
-                new String[]{String.valueOf(direccion.getIdDireccion())});
-        if (rowsAffected == 0) {
-            Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-
-
-
-
-
-    // hacer comprobacion de si esta siendo usada en una farmacia
-    public void deleteDireccion(int id) {
-            int rowsAffected = conexionDB.delete("DIRECCION", "IDDIRECCION = ?", new String[]{String.valueOf(id)});
-            if (rowsAffected == 0) {
-                Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show();
+    public void addDireccion(Direccion direccion, Response.Listener<String> callback) {
+        isDuplicate(direccion.getIdDireccion(), exists -> {
+            if (exists) {
+                Toast.makeText(context, R.string.duplicate_message, Toast.LENGTH_SHORT).show();
+                return;
             }
+            Map<String, String> params = new HashMap<>();
+            params.put("iddireccion", String.valueOf(direccion.getIdDireccion()));
+            params.put("iddistrito", String.valueOf(direccion.getIdDistrito()));
+            params.put("direccionexacta", direccion.getDireccionExacta());
+
+            ws.post("/direccion/insertar_direccion.php", params,
+                    response -> {
+                        Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
+                        callback.onResponse(response);
+                    },
+                    e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+            );
+        });
     }
 
-    private boolean isDuplicate(int id) {
-        String sql = "SELECT * FROM DIRECCION WHERE IDDIRECCION = ?";
-        Cursor cursor = conexionDB.rawQuery(sql, new String[]{String.valueOf(id)});
-        boolean exists = cursor.moveToFirst();
-        cursor.close();
-        return exists;
+    public void getDireccion(int id, Response.Listener<Direccion> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddireccion", String.valueOf(id));
+        ws.post("/direccion/obtener_direccion.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        if (obj.has("iddireccion")) {
+                            Direccion direccion = new Direccion(
+                                    obj.getInt("iddireccion"),
+                                    obj.getInt("iddistrito"),
+                                    obj.getString("direccionexacta"),
+                                    context);
+                            callback.onResponse(direccion);
+                        } else {
+                            callback.onResponse(null);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(null);
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(null);
+                });
+    }
+
+    public void getAllDireccion(Response.Listener<List<Direccion>> callback) {
+        ws.post("/direccion/listar_direcciones.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<Direccion> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new Direccion(
+                                    obj.getInt("iddireccion"),
+                                    obj.getInt("iddistrito"),
+                                    obj.getString("direccionexacta"),
+                                    context));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
+    }
+
+    public void getAllDepartamentos(Response.Listener<List<Departamento>> callback) {
+        ws.post("/direccion/listar_departamentos.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<Departamento> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new Departamento(
+                                    obj.getInt("iddepartamento"),
+                                    obj.getString("nombredepartamento")));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
+    }
+
+    public void getDepartamento(int id, Response.Listener<Departamento> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddepartamento", String.valueOf(id));
+        ws.post("/direccion/obtener_departamento.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        if (obj.has("iddepartamento")) {
+                            Departamento dep = new Departamento(
+                                    obj.getInt("iddepartamento"),
+                                    obj.getString("nombredepartamento"));
+                            callback.onResponse(dep);
+                        } else {
+                            callback.onResponse(null);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(null);
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(null);
+                });
+    }
+
+    public void getMunicipio(int id, Response.Listener<Municipio> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idmunicipio", String.valueOf(id));
+        ws.post("/direccion/obtener_municipio.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        if (obj.has("idmunicipio")) {
+                            Municipio mun = new Municipio(
+                                    obj.getInt("idmunicipio"),
+                                    obj.getInt("iddepartamento"),
+                                    obj.getString("nombremunicipio"));
+                            callback.onResponse(mun);
+                        } else {
+                            callback.onResponse(null);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(null);
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(null);
+                });
+    }
+
+    public void getDistrito(int id, Response.Listener<Distrito> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddistrito", String.valueOf(id));
+        ws.post("/direccion/obtener_distrito.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        if (obj.has("iddistrito")) {
+                            Distrito dis = new Distrito(
+                                    obj.getInt("iddistrito"),
+                                    obj.getInt("idmunicipio"),
+                                    obj.getString("nombredistrito"));
+                            callback.onResponse(dis);
+                        } else {
+                            callback.onResponse(null);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(null);
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(null);
+                });
+    }
+
+    public void getAllMunicipios(int departamentoId, Response.Listener<List<Municipio>> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddepartamento", String.valueOf(departamentoId));
+        ws.post("/direccion/listar_municipios.php", params,
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<Municipio> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new Municipio(
+                                    obj.getInt("idmunicipio"),
+                                    obj.getInt("iddepartamento"),
+                                    obj.getString("nombremunicipio")));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
+    }
+
+    public void getAllDistritos(int municipioId, Response.Listener<List<Distrito>> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idmunicipio", String.valueOf(municipioId));
+        ws.post("/direccion/listar_distritos.php", params,
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<Distrito> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new Distrito(
+                                    obj.getInt("iddistrito"),
+                                    obj.getInt("idmunicipio"),
+                                    obj.getString("nombredistrito")));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                e -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
+    }
+
+    public void updateDireccion(Direccion direccion, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddireccion", String.valueOf(direccion.getIdDireccion()));
+        params.put("iddistrito", String.valueOf(direccion.getIdDistrito()));
+        params.put("direccionexacta", direccion.getDireccionExacta());
+
+        ws.post("/direccion/actualizar_direccion.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    public void deleteDireccion(int id, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddireccion", String.valueOf(id));
+
+        ws.post("/direccion/eliminar_direccion.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                e -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    private void isDuplicate(int id, Response.Listener<Boolean> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("iddireccion", String.valueOf(id));
+        ws.post("/direccion/verificar_direccion.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        boolean existe = obj.optBoolean("existe", false);
+                        callback.onResponse(existe);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(false);
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(false);
+                });
     }
 }
+
 
 
 

@@ -303,6 +303,7 @@
     <string name="select_categoria">Select a category</string>
     <string name="error_select_categoria">You must select a valid category</string>
     <string name="error_guardar_subcategoria">Error saving the subcategory</string>
+    <string name="error">Error</string>
 
 
 </resources>

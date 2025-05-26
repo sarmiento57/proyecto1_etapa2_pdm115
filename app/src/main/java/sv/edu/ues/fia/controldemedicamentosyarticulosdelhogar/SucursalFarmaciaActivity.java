@@ -23,20 +23,13 @@ import java.util.List;
 
 public class SucursalFarmaciaActivity extends AppCompatActivity {
 
-
     private final ValidarAccesoCRUD vac = new ValidarAccesoCRUD(this);
     private SucursalFarmaciaDAO sucursalFarmaciaDAO;
-    private ListView lista;
-
     private DireccionDAO direccionDAO;
 
-    public ArrayAdapter<SucursalFarmacia> adapter;
-
+    private ListView lista;
+    private ArrayAdapter<SucursalFarmacia> adapter;
     private List<SucursalFarmacia> sucursales;
-
-
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,228 +37,166 @@ public class SucursalFarmaciaActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_sucursal_farmacia);
 
-        // Initialize DAO with SQLite connection
-        SQLiteDatabase conexionDB = new ControlBD(this).getConnection();
-        sucursalFarmaciaDAO = new SucursalFarmaciaDAO(this, conexionDB);
-        direccionDAO = new DireccionDAO(conexionDB, this);
+        sucursalFarmaciaDAO = new SucursalFarmaciaDAO(this);
+        direccionDAO = new DireccionDAO(this);
 
-        // Comprobacion Inicial de Permisos de Consulta
         lista = findViewById(R.id.lvBranch);
-        cargarLista();
 
         Button boton = findViewById(R.id.btnAddBranch);
-
-
-        TextView txtBusqueda = (TextView) findViewById(R.id.txtBusquedaSucursal);
+        TextView txtBusqueda = findViewById(R.id.txtBusquedaSucursal);
         Button botonBuscar = findViewById(R.id.btnSearchBranch);
-        botonBuscar.setVisibility(vac.validarAcceso(2) || vac.validarAcceso(3) || vac.validarAcceso(4)? View.VISIBLE : View.INVISIBLE);
+
+        botonBuscar.setVisibility(vac.validarAcceso(2) || vac.validarAcceso(3) || vac.validarAcceso(4) ? View.VISIBLE : View.INVISIBLE);
         botonBuscar.setOnClickListener(v -> {
             try {
                 int id = Integer.parseInt(txtBusqueda.getText().toString().trim());
                 buscarPorId(id);
-            }
-            catch (NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 e.printStackTrace();
                 Toast.makeText(this, R.string.invalid_search, Toast.LENGTH_LONG).show();
             }
         });
 
-
-
         boton.setVisibility(vac.validarAcceso(1) ? View.VISIBLE : View.INVISIBLE);
-
         lista.setVisibility(vac.validarAcceso(3) || vac.validarAcceso(4) ? View.VISIBLE : View.INVISIBLE);
 
-
-
-
-
-        lista.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-
-                if(vac.validarAcceso(2) || vac.validarAcceso(3) || vac.validarAcceso(4)) {
-                    SucursalFarmacia sucursalFarmacia = (SucursalFarmacia) parent.getItemAtPosition(position);
-                    showOptionsDialog(sucursalFarmacia);
-                }
-                else
-                {
-                    Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
-                }
-
-
-
+        lista.setOnItemClickListener((parent, view, position, id) -> {
+            if (vac.validarAcceso(2) || vac.validarAcceso(3) || vac.validarAcceso(4)) {
+                SucursalFarmacia sucursalFarmacia = (SucursalFarmacia) parent.getItemAtPosition(position);
+                showOptionsDialog(sucursalFarmacia);
+            } else {
+                Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
             }
         });
 
-        boton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
-                builder.setTitle(R.string.add);
-                View dialogView = getLayoutInflater().inflate(R.layout.dialog_branch, null);
-                builder.setView(dialogView);
+        boton.setOnClickListener(v -> showAddDialog());
 
-                final EditText idFarmacia = dialogView.findViewById(R.id.editTextIdFarmacia);
-                Spinner spinneridDireccion = dialogView.findViewById(R.id.spinnerIdDireccion);
-                final EditText nombreFarma = dialogView.findViewById(R.id.editTextNombreFarmacia);
-                final AlertDialog dialog = builder.create();
-                dialog.show();
-
-
-                List<Direccion> direccion = direccionDAO.getAllDireccion();
-                List<SucursalFarmacia> sucursales = sucursalFarmaciaDAO.getAllSucursalFarmacia();
-                List<Direccion> direccionNoAsignadas = new ArrayList<>(direccion);
-
-                for (int i = 0; i < direccion.size(); i++) {
-                    for (int j = 0; j < sucursales.size(); j++) {
-                        if (direccion.get(i).getIdDireccion() == sucursales.get(j).getIdDireccion()) {
-                            direccionNoAsignadas.remove(direccion.get(i)); // Eliminar la dirección ya asignada
-                            break; // Salimos del segundo bucle para evitar eliminarla varias veces
-                        }
-                    }
-                }
-
-                Direccion seleccion = new Direccion(-1,-1 , getString(R.string.select_addres), SucursalFarmaciaActivity.this);
-                direccionNoAsignadas.add(0, seleccion);
-                ArrayAdapter<Direccion> adapterDireccion = new ArrayAdapter<>(SucursalFarmaciaActivity.this, android.R.layout.simple_spinner_item, direccionNoAsignadas);
-                adapterDireccion.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spinneridDireccion.setAdapter(adapterDireccion);
-
-
-                Button botonGuardar = dialog.findViewById(R.id.buttonSave);
-                botonGuardar.setOnClickListener(view1 ->{
-                    if(spinneridDireccion.getSelectedItemPosition() == 0)
-                    {
-                        Toast.makeText(SucursalFarmaciaActivity.this, getString(R.string.valid_addres), Toast.LENGTH_LONG).show();
-                    }
-                    else{
-
-                        if(nombreFarma.getText().toString().trim().isEmpty() || idFarmacia.getText().toString().trim().isEmpty() ){
-
-                            Toast.makeText(SucursalFarmaciaActivity.this, getString(R.string.completar_Campos), Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        else
-                        {
-                            try {
-                                int idFarma = Integer.parseInt(idFarmacia.getText().toString());
-                                Direccion idDireccion = (Direccion) spinneridDireccion.getSelectedItem();
-
-                                String nombre = nombreFarma.getText().toString();
-
-                                SucursalFarmacia sucursal = new SucursalFarmacia(idFarma, idDireccion.getIdDireccion(), nombre,SucursalFarmaciaActivity.this);
-                                sucursalFarmaciaDAO.addSucursalFarmacia(sucursal); // Asegúrate que este método exista
-                                dialog.dismiss();
-                                Log.d("DEBUG", "Sucursal guardada: " + sucursal.toString());
-                                cargarLista();
-                            } catch (Exception e) {
-                                Log.e("ERROR", "Error al guardar sucursal: " + e.getMessage());
-                            }
-                        }
-
-                    }
-
-                });
-
-
-                Button botonClear = dialog.findViewById(R.id.buttonClear);
-                botonClear.setOnClickListener(view1 ->{
-                    idFarmacia.setText("");
-                    spinneridDireccion.setSelection(0);
-                    nombreFarma.setText("");
-
-                });
-
-            }
-        });
-
-
-
+        cargarLista();
     }
-
 
     private void cargarLista() {
-        sucursales = sucursalFarmaciaDAO.getAllSucursalFarmacia();
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, sucursales);
-        lista.setAdapter(adapter);
+        sucursalFarmaciaDAO.getAllSucursalFarmacia(sucursalesResponse -> {
+            sucursales = sucursalesResponse;
+            adapter = new ArrayAdapter<>(SucursalFarmaciaActivity.this, android.R.layout.simple_list_item_1, sucursales);
+            runOnUiThread(() -> lista.setAdapter(adapter));
+        });
     }
 
-    private void showOptionsDialog(final SucursalFarmacia sucursalFarmacia) {
+    private void showAddDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.options);
-
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_options, null);
+        builder.setTitle(R.string.add);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_branch, null);
         builder.setView(dialogView);
 
-        final AlertDialog dialog = builder.create();
+        EditText idFarmacia = dialogView.findViewById(R.id.editTextIdFarmacia);
+        Spinner spinneridDireccion = dialogView.findViewById(R.id.spinnerIdDireccion);
+        EditText nombreFarma = dialogView.findViewById(R.id.editTextNombreFarmacia);
 
-        if(!vac.validarAcceso(2))
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        direccionDAO.getAllDireccion(direcciones -> {
+            sucursalFarmaciaDAO.getAllSucursalFarmacia(sucursales -> {
+                List<Direccion> direccionNoAsignadas = new ArrayList<>(direcciones);
+                for (Direccion d : direcciones) {
+                    for (SucursalFarmacia sf : sucursales) {
+                        if (d.getIdDireccion() == sf.getIdDireccion()) {
+                            direccionNoAsignadas.remove(d);
+                            break;
+                        }
+                    }
+                }
+                Direccion seleccion = new Direccion(-1, -1, getString(R.string.select_addres), SucursalFarmaciaActivity.this);
+                direccionNoAsignadas.add(0, seleccion);
+
+                ArrayAdapter<Direccion> adapterDireccion = new ArrayAdapter<>(SucursalFarmaciaActivity.this,
+                        android.R.layout.simple_spinner_item, direccionNoAsignadas);
+                adapterDireccion.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                runOnUiThread(() -> spinneridDireccion.setAdapter(adapterDireccion));
+            });
+        });
+
+        Button botonGuardar = dialog.findViewById(R.id.buttonSave);
+        botonGuardar.setOnClickListener(v -> {
+            if (spinneridDireccion.getSelectedItemPosition() == 0) {
+                Toast.makeText(SucursalFarmaciaActivity.this, getString(R.string.valid_addres), Toast.LENGTH_LONG).show();
+                return;
+            }
+            if (nombreFarma.getText().toString().trim().isEmpty() || idFarmacia.getText().toString().trim().isEmpty()) {
+                Toast.makeText(SucursalFarmaciaActivity.this, getString(R.string.completar_Campos), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            try {
+                int idFarma = Integer.parseInt(idFarmacia.getText().toString());
+                Direccion idDireccion = (Direccion) spinneridDireccion.getSelectedItem();
+                String nombre = nombreFarma.getText().toString();
+
+                SucursalFarmacia sucursal = new SucursalFarmacia(idFarma, idDireccion.getIdDireccion(), nombre, SucursalFarmaciaActivity.this);
+                sucursalFarmaciaDAO.addSucursalFarmacia(sucursal, response -> {
+                        runOnUiThread(() -> {
+                            cargarLista();
+                            dialog.dismiss();
+                        });
+                });
+            } catch (Exception e) {
+                Toast.makeText(this, R.string.error, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        Button botonClear = dialog.findViewById(R.id.buttonClear);
+        botonClear.setOnClickListener(v -> {
+            idFarmacia.setText("");
+            spinneridDireccion.setSelection(0);
+            nombreFarma.setText("");
+        });
+    }
+
+    private void showOptionsDialog(SucursalFarmacia sucursalFarmacia) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.options);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_options, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+
+        if (!vac.validarAcceso(2))
             dialogView.findViewById(R.id.buttonView).setVisibility(View.GONE);
-
-        if(!vac.validarAcceso(3))
+        if (!vac.validarAcceso(3))
             dialogView.findViewById(R.id.buttonEdit).setVisibility(View.GONE);
-
-        if(!vac.validarAcceso(4))
+        if (!vac.validarAcceso(4))
             dialogView.findViewById(R.id.buttonDelete).setVisibility(View.GONE);
 
-        dialogView.findViewById(R.id.buttonView).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Handle view action
-                viewDireccion(sucursalFarmacia);
-                dialog.dismiss();
-                // Implement view logic here
-            }
+        dialogView.findViewById(R.id.buttonView).setOnClickListener(v -> {
+            dialog.dismiss();
+            viewSucursal(sucursalFarmacia);
         });
 
-        dialogView.findViewById(R.id.buttonEdit).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                // Handle edit action
-                dialog.dismiss();
-                editarFarmacia(sucursalFarmacia);
-
-
-                // Implement edit logic here
-            }
+        dialogView.findViewById(R.id.buttonEdit).setOnClickListener(v -> {
+            dialog.dismiss();
+            editarFarmacia(sucursalFarmacia);
         });
 
-        dialogView.findViewById(R.id.buttonDelete).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Handle delete action
-                dialog.dismiss();
-                deleteSucursalFarmacia(sucursalFarmacia.getIdFarmacia());
-            }
+        dialogView.findViewById(R.id.buttonDelete).setOnClickListener(v -> {
+            dialog.dismiss();
+            deleteSucursalFarmacia(sucursalFarmacia.getIdFarmacia());
         });
 
         dialog.show();
     }
 
     private void deleteSucursalFarmacia(int id) {
-
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.confirm_delete);
         builder.setMessage(getString(R.string.confirm_delete_message) + ": " + id);
 
         builder.setPositiveButton(R.string.yes, (dialog, which) -> {
-
-            int rowsAffected = sucursalFarmaciaDAO.eliminarSucursal(id);
-            cargarLista();
-
-            if (rowsAffected == 0) {
-                Toast.makeText(this, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, R.string.delete_message, Toast.LENGTH_SHORT).show();
-            }
+            sucursalFarmaciaDAO.eliminarSucursal(id, response -> {
+                    runOnUiThread(this::cargarLista);
+            });
         });
 
         builder.setNegativeButton(R.string.no, (dialog, which) -> dialog.dismiss());
-        AlertDialog dialog = builder.create();
-        dialog.show();
+
+        builder.create().show();
     }
 
     private void editarFarmacia(SucursalFarmacia sucursalFarmacia) {
@@ -273,144 +204,129 @@ public class SucursalFarmaciaActivity extends AppCompatActivity {
         builder.setTitle(R.string.update);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_branch, null);
         builder.setView(dialogView);
-
-        final EditText idFarmacia = dialogView.findViewById(R.id.editTextIdFarmacia);
-        Spinner spinneridDireccion = dialogView.findViewById(R.id.spinnerIdDireccion);
-        final EditText nombreFarma = dialogView.findViewById(R.id.editTextNombreFarmacia);
-        final AlertDialog dialog = builder.create();
+        AlertDialog dialog = builder.create();
         dialog.show();
 
-        // 1) Rellenar los campos
+        EditText idFarmacia = dialogView.findViewById(R.id.editTextIdFarmacia);
+        Spinner spinneridDireccion = dialogView.findViewById(R.id.spinnerIdDireccion);
+        EditText nombreFarma = dialogView.findViewById(R.id.editTextNombreFarmacia);
+
         idFarmacia.setText(String.valueOf(sucursalFarmacia.getIdFarmacia()));
         nombreFarma.setText(sucursalFarmacia.getNombreFarmacia());
         idFarmacia.setEnabled(false);
 
-        // 2) Obtener datos
-        List<Direccion> todas = direccionDAO.getAllDireccion();
-        List<SucursalFarmacia> todasSucursales = sucursalFarmaciaDAO.getAllSucursalFarmacia();
-        Direccion actual = direccionDAO.getDireccion(sucursalFarmacia.getIdDireccion());
+        // Declaramos adapterDireccion como arreglo final para que pueda usarse en lambdas
+        final ArrayAdapter<Direccion>[] adapterDireccion = new ArrayAdapter[1];
 
-        // 3) Filtrar direcciones no asignadas a otras sucursales (salvo la actual)
-        List<Direccion> libres = new ArrayList<>();
-        for (Direccion d : todas) {
-            if (d.getIdDireccion() == actual.getIdDireccion()) {
-                continue;  // saltamos la actual
-            }
-            boolean usada = false;
-            for (SucursalFarmacia sf : todasSucursales) {
-                if (sf.getIdDireccion() == d.getIdDireccion()) {
-                    usada = true;
-                    break;
+        direccionDAO.getAllDireccion(direcciones -> {
+            sucursalFarmaciaDAO.getAllSucursalFarmacia(sucursales -> {
+                final Direccion[] actual = { null };
+                for (Direccion d : direcciones) {
+                    if (d.getIdDireccion() == sucursalFarmacia.getIdDireccion()) {
+                        actual[0] = d;
+                        break;
+                    }
                 }
-            }
-            if (!usada) {
-                libres.add(d);
-            }
-        }
+                if (actual[0] == null) actual[0] = new Direccion(-1, -1, getString(R.string.select_addres), this);
 
-        // 4) Construir lista definitiva para el Spinner
-        Direccion placeholder = new Direccion(-1, -1, getString(R.string.select_addres), SucursalFarmaciaActivity.this);
-        libres.add(0, placeholder);
-        libres.add(actual);  // al final ponemos la actual
+                List<Direccion> libres = new ArrayList<>();
+                for (Direccion d : direcciones) {
+                    if (d.getIdDireccion() == actual[0].getIdDireccion()) continue;
+                    boolean usada = false;
+                    for (SucursalFarmacia sf : sucursales) {
+                        if (sf.getIdDireccion() == d.getIdDireccion()) {
+                            usada = true;
+                            break;
+                        }
+                    }
+                    if (!usada) libres.add(d);
+                }
+                libres.add(0, new Direccion(-1, -1, getString(R.string.select_addres), this));
+                libres.add(actual[0]);
 
-        ArrayAdapter<Direccion> adapter = new ArrayAdapter<>(
-                SucursalFarmaciaActivity.this,
-                android.R.layout.simple_spinner_item,
-                libres
-        );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinneridDireccion.setAdapter(adapter);
+                adapterDireccion[0] = new ArrayAdapter<>(SucursalFarmaciaActivity.this,
+                        android.R.layout.simple_spinner_item, libres);
+                adapterDireccion[0].setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                runOnUiThread(() -> {
+                    spinneridDireccion.setAdapter(adapterDireccion[0]);
+                    spinneridDireccion.setSelection(adapterDireccion[0].getPosition(actual[0]));
+                });
+            });
+        });
 
-        // 5) Seleccionar la posición de la dirección actual
-        int posActual = adapter.getPosition(actual);
-        spinneridDireccion.setSelection(posActual);
-
-        // 6) Guardar cambios con método de actualización
         Button botonGuardar = dialog.findViewById(R.id.buttonSave);
         botonGuardar.setOnClickListener(v -> {
-
-            if(spinneridDireccion.getSelectedItemPosition() == 0)
-            {
-                Toast.makeText(SucursalFarmaciaActivity.this , getString(R.string.valid_addres) , Toast.LENGTH_LONG).show();
+            if (spinneridDireccion.getSelectedItemPosition() == 0) {
+                Toast.makeText(SucursalFarmaciaActivity.this, getString(R.string.valid_addres), Toast.LENGTH_LONG).show();
+                return;
             }
-            else{
             try {
                 int idFarma = Integer.parseInt(idFarmacia.getText().toString());
                 Direccion seleccion = (Direccion) spinneridDireccion.getSelectedItem();
                 String nombre = nombreFarma.getText().toString();
 
-                SucursalFarmacia actualizado = new SucursalFarmacia(
-                        idFarma,
-                        seleccion.getIdDireccion(),
-                        nombre,
-                        this
-                );
-                sucursalFarmaciaDAO.updateSucursalFarmacia(actualizado);  // <<— update en lugar de add
-                Toast.makeText(SucursalFarmaciaActivity.this, R.string.update_message, Toast.LENGTH_LONG).show();
-                dialog.dismiss();
-                cargarLista();
+                SucursalFarmacia actualizado = new SucursalFarmacia(idFarma, seleccion.getIdDireccion(), nombre, this);
+                sucursalFarmaciaDAO.updateSucursalFarmacia(actualizado, response -> {
+                        runOnUiThread(() -> {
+                            cargarLista();
+                            dialog.dismiss();
+                        });
+                });
             } catch (Exception e) {
-                Log.e("ERROR", "Error al actualizar sucursal: " + e.getMessage());
-            }
+                Toast.makeText(this, R.string.error, Toast.LENGTH_SHORT).show();
             }
         });
 
-        // 7) Botón Limpiar vuelve a la posición original
         Button botonClear = dialog.findViewById(R.id.buttonClear);
         botonClear.setOnClickListener(v -> {
-            spinneridDireccion.setSelection(posActual);
+            if (adapterDireccion[0] != null) {
+                spinneridDireccion.setSelection(adapterDireccion[0].getPosition(new Direccion(-1, -1, getString(R.string.select_addres), this)));
+            }
             nombreFarma.setText(sucursalFarmacia.getNombreFarmacia());
         });
     }
 
 
-    private  void viewDireccion(SucursalFarmacia sucursalFarmacia)
-    {
+    private void viewSucursal(SucursalFarmacia sucursalFarmacia) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.update);
+        builder.setTitle(R.string.view);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_branch, null);
         builder.setView(dialogView);
-
-        final EditText idFarmacia = dialogView.findViewById(R.id.editTextIdFarmacia);
-        Spinner spinnerDireccion = dialogView.findViewById(R.id.spinnerIdDireccion);
-        final EditText nombreFarma = dialogView.findViewById(R.id.editTextNombreFarmacia);
-        final AlertDialog dialog = builder.create();
+        AlertDialog dialog = builder.create();
         dialog.show();
-        Direccion actual = direccionDAO.getDireccion(sucursalFarmacia.getIdDireccion());
+
+        EditText idFarmacia = dialogView.findViewById(R.id.editTextIdFarmacia);
+        Spinner spinnerDireccion = dialogView.findViewById(R.id.spinnerIdDireccion);
+        EditText nombreFarma = dialogView.findViewById(R.id.editTextNombreFarmacia);
+
         idFarmacia.setText(String.valueOf(sucursalFarmacia.getIdFarmacia()));
         nombreFarma.setText(sucursalFarmacia.getNombreFarmacia());
-
-        List<Direccion> libres = new ArrayList<>();
-        libres.add(actual);
-
-
-        ArrayAdapter<Direccion> adapter = new ArrayAdapter<>(
-                SucursalFarmaciaActivity.this,
-                android.R.layout.simple_spinner_item,
-                libres
-        );
-
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerDireccion.setAdapter(adapter);
-        int posActual = adapter.getPosition(actual);
-        spinnerDireccion.setSelection(posActual);
-
-
-
         idFarmacia.setEnabled(false);
         nombreFarma.setEnabled(false);
+        spinnerDireccion.setEnabled(false);
 
-        dialog.findViewById(R.id.buttonSave).setVisibility(View.GONE);
-        dialog.findViewById(R.id.buttonClear).setVisibility(View.GONE);
+        direccionDAO.getDireccion(sucursalFarmacia.getIdDireccion(), direccion -> {
+            ArrayAdapter<Direccion> adapterDireccion = new ArrayAdapter<>(SucursalFarmaciaActivity.this,
+                    android.R.layout.simple_spinner_item, new Direccion[]{direccion});
+            adapterDireccion.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
+            runOnUiThread(() -> {
+                spinnerDireccion.setAdapter(adapterDireccion);
+                spinnerDireccion.setSelection(adapterDireccion.getPosition(direccion));
+            });
+        });
+
+        dialogView.findViewById(R.id.buttonSave).setVisibility(View.GONE);
+        dialogView.findViewById(R.id.buttonClear).setVisibility(View.GONE);
     }
 
     private void buscarPorId(int id) {
-        SucursalFarmacia sucursalFarmacia = sucursalFarmaciaDAO.getSucursalFarmacia(id);
-        if (sucursalFarmacia != null) {
-            viewDireccion(sucursalFarmacia);
-        } else {
-            Toast.makeText(this, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        }
+        sucursalFarmaciaDAO.getSucursalFarmacia(id, sucursalFarmacia -> {
+            if (sucursalFarmacia != null) {
+                runOnUiThread(() -> viewSucursal(sucursalFarmacia));
+            } else {
+                runOnUiThread(() -> Toast.makeText(this, R.string.not_found_message, Toast.LENGTH_SHORT).show());
+            }
+        });
     }
 }

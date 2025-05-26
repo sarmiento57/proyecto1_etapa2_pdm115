@@ -22,6 +22,8 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.Response;
+
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
@@ -42,13 +44,12 @@ public class DetalleCompraActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_detalle_compra);
 
-        SQLiteDatabase conexionDB = new ControlBD(this).getConnection();
-        detalleCompraDAO = new DetalleCompraDAO(conexionDB, this);
+        detalleCompraDAO = new DetalleCompraDAO(this);  // Usando WebServiceHelper
 
         TextView txtBusqueda = findViewById(R.id.busquedaDetalleCompra);
 
         Button btnBuscarDetalleCompraPorId = findViewById(R.id.btnBuscarDetalleCompra);
-        btnBuscarDetalleCompraPorId.setVisibility(vac.validarAcceso(2) || vac.validarAcceso(3) || vac.validarAcceso(4)? View.VISIBLE : View.INVISIBLE);
+        btnBuscarDetalleCompraPorId.setVisibility(vac.validarAcceso(2) || vac.validarAcceso(3) || vac.validarAcceso(4) ? View.VISIBLE : View.INVISIBLE);
         btnBuscarDetalleCompraPorId.setOnClickListener(v -> {
             try {
                 int id = Integer.parseInt(txtBusqueda.getText().toString().trim());
@@ -74,9 +75,14 @@ public class DetalleCompraActivity extends AppCompatActivity {
     }
 
     private void fillList() {
-        listaDetalleCompra = detalleCompraDAO.getAllDetalleCompra();
-        adaptadorDetalleCompra = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listaDetalleCompra);
-        listViewDetalleCompra.setAdapter(adaptadorDetalleCompra);
+        detalleCompraDAO.getAllDetalleCompra(new Response.Listener<List<DetalleCompra>>() {
+            @Override
+            public void onResponse(List<DetalleCompra> detalles) {
+                listaDetalleCompra = detalles;
+                adaptadorDetalleCompra = new ArrayAdapter<>(DetalleCompraActivity.this, android.R.layout.simple_list_item_1, listaDetalleCompra);
+                listViewDetalleCompra.setAdapter(adaptadorDetalleCompra);
+            }
+        });
     }
 
     private void showAddDialog() {
@@ -94,6 +100,7 @@ public class DetalleCompraActivity extends AppCompatActivity {
         Spinner spinnerArticuloCompra = dialogView.findViewById(R.id.spinnerArticuloCompra);
         Spinner spinnerFacturaCompra = dialogView.findViewById(R.id.spinnerFacturaCompra);
 
+        // TextWatcher to calculate the total
         TextWatcher watcher = new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -110,6 +117,7 @@ public class DetalleCompraActivity extends AppCompatActivity {
         editTextUnitarioDetalleCompra.addTextChangedListener(watcher);
         editTextCantidadDetalleCompra.addTextChangedListener(watcher);
 
+        // Disable total and date fields
         editTextTotalDetalleCompra.setInputType(InputType.TYPE_NULL);
         editTextTotalDetalleCompra.setFocusableInTouchMode(false);
         editTextTotalDetalleCompra.setFocusable(false);
@@ -123,36 +131,16 @@ public class DetalleCompraActivity extends AppCompatActivity {
         Button btnGuardar = dialogView.findViewById(R.id.btnGuardarDetalleCompra);
         Button btnLimpiar = dialogView.findViewById(R.id.btnLimpiarDetalleCompra);
 
-        List<FacturaCompra> facturas = detalleCompraDAO.getAllFacturaCompra();
-        facturas.add(0, new FacturaCompra(-1, -1, null, this));
-        ArrayAdapter<FacturaCompra> adapterFactura = new ArrayAdapter<FacturaCompra>(this, android.R.layout.simple_spinner_item, facturas) {
+        // Get facturas from the database (async call with callback)
+        detalleCompraDAO.getAllFacturaCompra(new Response.Listener<List<FacturaCompra>>() {
             @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                FacturaCompra factura = getItem(position);
-                if (factura.getIdCompra() == -1) {
-                    view.setText(getString(R.string.select_factura));
-                } else {
-                    view.setText(getString(R.string.invoice_id) + ": " + factura.getIdCompra() + ", "  + getString(R.string.provider_id) + ": " + factura.getIdProveedor()); // Esto se muestra cuando está cerrado
-                }
-                return view;
+            public void onResponse(List<FacturaCompra> facturas) {
+                facturas.add(0, new FacturaCompra(-1, -1, null, DetalleCompraActivity.this));  // Default option
+                ArrayAdapter<FacturaCompra> adapterFactura = new ArrayAdapter<>(DetalleCompraActivity.this, android.R.layout.simple_spinner_item, facturas);
+                adapterFactura.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerFacturaCompra.setAdapter(adapterFactura);
             }
-
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                FacturaCompra factura = getItem(position);
-                if (factura.getIdCompra() == -1) {
-                    view.setText(getString(R.string.select_factura));
-                } else {
-                    view.setText("ID : " + factura.getIdCompra() + ", "  + getString(R.string.provider) + ": " + factura.getIdProveedor() + ", " + getString(R.string.purchase_date) + ": " + factura.getFechaCompra());
-                }
-                return view;
-            }
-        };
-
-        adapterFactura.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerFacturaCompra.setAdapter(adapterFactura);
+        });
 
         spinnerFacturaCompra.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -171,46 +159,33 @@ public class DetalleCompraActivity extends AppCompatActivity {
             }
         });
 
-        List<Articulo> articulos = detalleCompraDAO.getAllArticulo();
-        articulos.add(0, new Articulo(-1, getString(R.string.select_articulo), this));
-        ArrayAdapter<Articulo> adapterArticulo = new ArrayAdapter<Articulo>(this, android.R.layout.simple_spinner_item, articulos) {
+        // Get articulos from the database (async call with callback)
+        detalleCompraDAO.getAllArticulo(new Response.Listener<List<Articulo>>() {
             @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                Articulo articulo = getItem(position);
-                if (articulo.getIdArticulo() == -1) {
-                    view.setText(getString(R.string.select_articulo));
-                } else {
-                    view.setText(articulo.getNombreArticulo());
-                }
-                return view;
+            public void onResponse(List<Articulo> articulos) {
+                articulos.add(0, new Articulo(-1, getString(R.string.select_articulo), DetalleCompraActivity.this));  // Default option
+                ArrayAdapter<Articulo> adapterArticulo = new ArrayAdapter<>(DetalleCompraActivity.this, android.R.layout.simple_spinner_item, articulos);
+                adapterArticulo.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerArticuloCompra.setAdapter(adapterArticulo);
             }
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                Articulo articulo = getItem(position);
-                if (articulo.getIdArticulo() == -1) {
-                    view.setText(getString(R.string.select_articulo));
-                } else {
-                    view.setText(articulo.getNombreArticulo() + " (ID: " + articulo.getIdArticulo() + ")");
-                }
-                return view;
-            }
-        };
+        });
 
-        adapterArticulo.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerArticuloCompra.setAdapter(adapterArticulo);
-
-
+        // Validation setup
         List<View> vistas = Arrays.asList(
                 editTextIdDetalleCompra, editTextFechaDetalleCompra, editTextUnitarioDetalleCompra, editTextCantidadDetalleCompra,
                 editTextTotalDetalleCompra, spinnerArticuloCompra, spinnerFacturaCompra
         );
 
         List<String> listaRegex = Arrays.asList(
-                "\\d+", "\\d{4}-\\d{2}-\\d{2}", "^(?!0(\\.0+)?$)\\d+(\\.\\d{1,2})?$",
-                "^[1-9]\\d*$", "^(?!0(\\.0+)?$)\\d+(\\.\\d{1,2})?$", "\\d+", "\\d+"
+                "\\d+",
+                "\\d{4}-\\d{2}-\\d{2}",
+                "^(?!0(\\.0+)?$)\\d+(\\.\\d+)?$",
+                "^[1-9]\\d*$",
+                "^(?!0(\\.0+)?$)\\d+(\\.\\d+)?$",
+                "\\d+",
+                "\\d+"
         );
+
 
         List<Integer> mensajesDeError = Arrays.asList(
                 R.string.only_numbers, R.string.invalid_date, R.string.only_numbers, R.string.only_numbers,
@@ -236,7 +211,6 @@ public class DetalleCompraActivity extends AppCompatActivity {
         dialog.show();
     }
 
-
     private void saveDetalleCompra(EditText editTextIdDetalleCompra, EditText editTextFechaDetalleCompra, EditText editTextUnitarioDetalleCompra,
                                    EditText editTextCantidadDetalleCompra, EditText editTextTotalDetalleCompra, Spinner spinnerArticuloCompra, Spinner spinnerFacturaCompra) {
 
@@ -248,15 +222,18 @@ public class DetalleCompraActivity extends AppCompatActivity {
 
         FacturaCompra facturaSeleccionada = (FacturaCompra) spinnerFacturaCompra.getSelectedItem();
         Articulo articuloSeleccionado = (Articulo) spinnerArticuloCompra.getSelectedItem();
-            DetalleCompra detalleCompra = new DetalleCompra(facturaSeleccionada.getIdCompra(), articuloSeleccionado.getIdArticulo(), idDetalleCompra, fecha,
-                    precioUnitario, cantidadArticulos, totalDetalle, this);
-            detalleCompraDAO.addDetalleCompra(detalleCompra);
-            fillList();
+        DetalleCompra detalleCompra = new DetalleCompra(facturaSeleccionada.getIdCompra(), articuloSeleccionado.getIdArticulo(), idDetalleCompra, fecha,
+                precioUnitario, cantidadArticulos, totalDetalle, this);
+
+        detalleCompraDAO.addDetalleCompra(detalleCompra, response -> {
+            fillList(); // Recargamos la lista de detalle compras
+        });
 
         clearFieldsDetalleCompra(editTextIdDetalleCompra, editTextFechaDetalleCompra, editTextUnitarioDetalleCompra, editTextCantidadDetalleCompra,
                 editTextTotalDetalleCompra, spinnerArticuloCompra, spinnerFacturaCompra
         );
     }
+
 
     private void showOptionsDialog(final DetalleCompra detalleCompra) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -267,47 +244,36 @@ public class DetalleCompraActivity extends AppCompatActivity {
 
         final AlertDialog dialog = builder.create();
 
-        dialogView.findViewById(R.id.buttonView).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(vac.validarAcceso(2))
-                    viewDetalleCompra(detalleCompra);
-                else
-                    Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
+        dialogView.findViewById(R.id.buttonView).setOnClickListener(v -> {
+            if(vac.validarAcceso(2))
+                viewDetalleCompra(detalleCompra);
+            else
+                Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
+            dialog.dismiss();
+        });
+
+        dialogView.findViewById(R.id.buttonEdit).setOnClickListener(v -> {
+            if(vac.validarAcceso(3)) {
+                dialog.dismiss();
+                editDetalleCompra(detalleCompra);
+            }
+            else {
+                Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
                 dialog.dismiss();
             }
         });
 
-        dialogView.findViewById(R.id.buttonEdit).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(vac.validarAcceso(3)) {
-                    dialog.dismiss();
-                    editDetalleCompra(detalleCompra);
-                }
-                else {
-                    Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
-                    dialog.dismiss();
-                }
+        dialogView.findViewById(R.id.buttonDelete).setOnClickListener(v -> {
+            if (vac.validarAcceso(4)) {
+                deleteDetalleCompra(detalleCompra.getIdDetalleCompra());
+            } else {
+                Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
             }
-        });
-
-        dialogView.findViewById(R.id.buttonDelete).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (vac.validarAcceso(4)) {
-                    deleteDetalleCompra(detalleCompra.getIdDetalleCompra());
-                } else {
-                    Toast.makeText(getApplicationContext(), R.string.action_block, Toast.LENGTH_LONG).show();
-                }
-                dialog.dismiss();
-            }
+            dialog.dismiss();
         });
 
         dialog.show();
     }
-
-
 
     private void viewDetalleCompra(DetalleCompra detalleCompra) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -344,87 +310,49 @@ public class DetalleCompraActivity extends AppCompatActivity {
         editTextTotalDetalleCompra.setText(String.valueOf(detalleCompra.getTotalDetalleCompra()));
         editTextCantidadDetalleCompra.setText(String.valueOf(detalleCompra.getCantidadCompra()));
 
-        // obtener lista de facturas compra
-        List<FacturaCompra> facturas = detalleCompraDAO.getAllFacturaCompra();
-        ArrayAdapter<FacturaCompra> adapterFactura = new ArrayAdapter<FacturaCompra>(this, android.R.layout.simple_spinner_item, facturas) {
+        // Obtener lista de facturas y artículos de manera asincrónica
+        detalleCompraDAO.getAllFacturaCompra(new Response.Listener<List<FacturaCompra>>() {
             @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                FacturaCompra factura = getItem(position);
-                if (factura.getIdCompra() == -1) {
-                    view.setText(getString(R.string.select_factura));
-                } else {
-                    view.setText(getString(R.string.invoice_id) + ": " + factura.getIdCompra() + ", "  + getString(R.string.provider_id) + ": " + factura.getIdProveedor()); // Esto se muestra cuando está cerrado
-                }
-                return view;
-            }
+            public void onResponse(List<FacturaCompra> facturas) {
+                // Asegurar que la primera opción sea una opción "Seleccionar" por defecto
+                facturas.add(0, new FacturaCompra(-1, -1, null, DetalleCompraActivity.this));
+                ArrayAdapter<FacturaCompra> adapterFactura = new ArrayAdapter<>(DetalleCompraActivity.this, android.R.layout.simple_spinner_item, facturas);
+                adapterFactura.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerFacturaCompra.setAdapter(adapterFactura);
 
+                // Seleccionar la factura relacionada con el detalle de compra
+                for (int i = 0; i < facturas.size(); i++) {
+                    if (facturas.get(i).getIdCompra() == detalleCompra.getIdCompra()) {
+                        spinnerFacturaCompra.setSelection(i);
+                        break;
+                    }
+                }
+            }
+        });
+
+        // Obtener lista de artículos de manera asincrónica
+        detalleCompraDAO.getAllArticulo(new Response.Listener<List<Articulo>>() {
             @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                FacturaCompra factura = getItem(position);
-                if (factura.getIdCompra() == -1) {
-                    view.setText(getString(R.string.select_factura));
-                    
-                } else {
-                    view.setText("ID : " + factura.getIdCompra() + ", "  + getString(R.string.provider) + ": " + factura.getIdProveedor() + ", " + getString(R.string.purchase_date) + ": " + factura.getFechaCompra());
-                    
+            public void onResponse(List<Articulo> articulos) {
+                // Asegurar que la primera opción sea una opción "Seleccionar" por defecto
+                articulos.add(0, new Articulo(-1, getString(R.string.select_articulo), DetalleCompraActivity.this));
+                ArrayAdapter<Articulo> adapterArticulo = new ArrayAdapter<>(DetalleCompraActivity.this, android.R.layout.simple_spinner_item, articulos);
+                adapterArticulo.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerArticuloCompra.setAdapter(adapterArticulo);
+
+                // Seleccionar el artículo relacionado con el detalle de compra
+                for (int i = 0; i < articulos.size(); i++) {
+                    if (articulos.get(i).getIdArticulo() == detalleCompra.getIdArticulo()) {
+                        spinnerArticuloCompra.setSelection(i);
+                        break;
+                    }
                 }
-                return view;
             }
-        };
-
-
-        adapterFactura.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerFacturaCompra.setAdapter(adapterFactura);
-
-        List<Articulo> articulos = detalleCompraDAO.getAllArticulo();
-        ArrayAdapter<Articulo> adapterArticulo = new ArrayAdapter<Articulo>(this, android.R.layout.simple_spinner_item, articulos) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                Articulo articulo = getItem(position);
-                if (articulo.getIdArticulo() == -1) {
-                    view.setText(getString(R.string.select_articulo));
-                } else {
-                    view.setText(articulo.getNombreArticulo());
-                }
-                return view;
-            }
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                Articulo articulo = getItem(position);
-                if (articulo.getIdArticulo() == -1) {
-                    view.setText(getString(R.string.select_articulo));
-                    
-                } else {
-                    view.setText(articulo.getNombreArticulo() + " (ID: " + articulo.getIdArticulo() + ")");
-                    
-                }
-                return view;
-            }
-        };
-        adapterArticulo.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerArticuloCompra.setAdapter(adapterArticulo);
-
-        // seleccionar factura relacionada
-        for (int i = 0; i < facturas.size(); i++) {
-            if (facturas.get(i).getIdCompra() == detalleCompra.getIdCompra()) {
-                spinnerFacturaCompra.setSelection(i);
-                break;
-            }
-        }
-
-        for (int i = 0; i < articulos.size(); i++) {
-            if (articulos.get(i).getIdArticulo() == detalleCompra.getIdArticulo()) {
-                spinnerArticuloCompra.setSelection(i);
-                break;
-            }
-        }
+        });
 
         builder.show();
     }
+
 
     private void editDetalleCompra(DetalleCompra detalleCompra) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -441,6 +369,7 @@ public class DetalleCompraActivity extends AppCompatActivity {
         Spinner spinnerArticuloCompra = dialogView.findViewById(R.id.spinnerArticuloCompra);
         Spinner spinnerFacturaCompra = dialogView.findViewById(R.id.spinnerFacturaCompra);
 
+        // TextWatcher to update the total when unit or quantity changes
         TextWatcher watcher = new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -457,8 +386,8 @@ public class DetalleCompraActivity extends AppCompatActivity {
         editTextUnitarioDetalleCompra.addTextChangedListener(watcher);
         editTextCantidadDetalleCompra.addTextChangedListener(watcher);
 
+        // Disable input fields for certain fields
         editTextIdDetalleCompra.setEnabled(false);
-
         editTextTotalDetalleCompra.setInputType(InputType.TYPE_NULL);
         editTextTotalDetalleCompra.setFocusableInTouchMode(false);
         editTextTotalDetalleCompra.setFocusable(false);
@@ -469,49 +398,34 @@ public class DetalleCompraActivity extends AppCompatActivity {
         editTextFechaDetalleCompra.setFocusable(false);
         editTextFechaDetalleCompra.setClickable(false);
 
-        spinnerArticuloCompra.setEnabled(false);
-        spinnerFacturaCompra.setEnabled(false);
-
         editTextCantidadDetalleCompra.setInputType(InputType.TYPE_NULL);
         editTextCantidadDetalleCompra.setFocusableInTouchMode(false);
         editTextCantidadDetalleCompra.setFocusable(false);
         editTextCantidadDetalleCompra.setClickable(false);
 
+        spinnerArticuloCompra.setEnabled(false);
+        spinnerFacturaCompra.setEnabled(false);
 
-
-        // obtener lista de facturas compra
-        List<FacturaCompra> facturas = detalleCompraDAO.getAllFacturaCompra();
-        ArrayAdapter<FacturaCompra> adapterFactura = new ArrayAdapter<FacturaCompra>(this, android.R.layout.simple_spinner_item, facturas) {
+        // Fetch Facturas and Articulos asynchronously
+        detalleCompraDAO.getAllFacturaCompra(new Response.Listener<List<FacturaCompra>>() {
             @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                FacturaCompra factura = getItem(position);
-                if (factura.getIdCompra() == -1) {
-                    view.setText(getString(R.string.select_factura));
-                } else {
-                    view.setText(getString(R.string.invoice_id) + ": " + factura.getIdCompra() + ", "  + getString(R.string.provider_id) + ": " + factura.getIdProveedor()); // Esto se muestra cuando está cerrado
+            public void onResponse(List<FacturaCompra> facturas) {
+                facturas.add(0, new FacturaCompra(-1, -1, null, DetalleCompraActivity.this)); // Default selection
+                ArrayAdapter<FacturaCompra> adapterFactura = new ArrayAdapter<>(DetalleCompraActivity.this, android.R.layout.simple_spinner_item, facturas);
+                adapterFactura.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerFacturaCompra.setAdapter(adapterFactura);
+
+                // Set selected item in the spinner
+                for (int i = 0; i < facturas.size(); i++) {
+                    if (facturas.get(i).getIdCompra() == detalleCompra.getIdCompra()) {
+                        spinnerFacturaCompra.setSelection(i);
+                        break;
+                    }
                 }
-                return view;
             }
+        });
 
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                FacturaCompra factura = getItem(position);
-                if (factura.getIdCompra() == -1) {
-                    view.setText(getString(R.string.select_factura));
-                    
-                } else {
-                    view.setText("ID : " + factura.getIdCompra() + ", "  + getString(R.string.provider) + ": " + factura.getIdProveedor() + ", " + getString(R.string.purchase_date) + ": " + factura.getFechaCompra());
-                    
-                }
-                return view;
-            }
-        };
-
-        adapterFactura.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerFacturaCompra.setAdapter(adapterFactura);
-
+        // Set the on item selected listener for Factura
         spinnerFacturaCompra.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
@@ -529,63 +443,37 @@ public class DetalleCompraActivity extends AppCompatActivity {
             }
         });
 
-        List<Articulo> articulos = detalleCompraDAO.getAllArticulo();
-        ArrayAdapter<Articulo> adapterArticulo = new ArrayAdapter<Articulo>(this, android.R.layout.simple_spinner_item, articulos) {
+        // Fetch Articulos asynchronously
+        detalleCompraDAO.getAllArticulo(new Response.Listener<List<Articulo>>() {
             @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                Articulo articulo = getItem(position);
-                if (articulo.getIdArticulo() == -1) {
-                    view.setText(getString(R.string.select_articulo));
-                } else {
-                    view.setText(articulo.getNombreArticulo());
-                }
-                return view;
-            }
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                Articulo articulo = getItem(position);
-                if (articulo.getIdArticulo() == -1) {
-                    view.setText(getString(R.string.select_articulo));
-                    
-                } else {
-                    view.setText(articulo.getNombreArticulo() + " (ID: " + articulo.getIdArticulo() + ")");
-                    
-                }
-                return view;
-            }
-        };
+            public void onResponse(List<Articulo> articulos) {
+                articulos.add(0, new Articulo(-1, getString(R.string.select_articulo), DetalleCompraActivity.this)); // Default selection
+                ArrayAdapter<Articulo> adapterArticulo = new ArrayAdapter<>(DetalleCompraActivity.this, android.R.layout.simple_spinner_item, articulos);
+                adapterArticulo.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerArticuloCompra.setAdapter(adapterArticulo);
 
-        adapterArticulo.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerArticuloCompra.setAdapter(adapterArticulo);
+                // Set selected item in the spinner
+                for (int i = 0; i < articulos.size(); i++) {
+                    if (articulos.get(i).getIdArticulo() == detalleCompra.getIdArticulo()) {
+                        spinnerArticuloCompra.setSelection(i);
+                        break;
+                    }
+                }
+            }
+        });
 
+        // Populate EditTexts with current DetalleCompra data
         editTextIdDetalleCompra.setText(String.valueOf(detalleCompra.getIdDetalleCompra()));
         editTextFechaDetalleCompra.setText(detalleCompra.getFechaDeCompra());
         editTextUnitarioDetalleCompra.setText(String.valueOf(detalleCompra.getPrecioUnitarioCompra()));
         editTextTotalDetalleCompra.setText(String.valueOf(detalleCompra.getTotalDetalleCompra()));
         editTextCantidadDetalleCompra.setText(String.valueOf(detalleCompra.getCantidadCompra()));
 
-
-        // seleccionar factura relacionada
-        for (int i = 0; i < facturas.size(); i++) {
-            if (facturas.get(i).getIdCompra() == detalleCompra.getIdCompra()) {
-                spinnerFacturaCompra.setSelection(i);
-                break;
-            }
-        }
-
-        for (int i = 0; i < articulos.size(); i++) {
-            if (articulos.get(i).getIdArticulo() == detalleCompra.getIdArticulo()) {
-                spinnerArticuloCompra.setSelection(i);
-                break;
-            }
-        }
-
         Button btnGuardar = dialogView.findViewById(R.id.btnGuardarDetalleCompra);
         Button btnLimpiar = dialogView.findViewById(R.id.btnLimpiarDetalleCompra);
         btnLimpiar.setVisibility(View.GONE);
 
+        // Disable editTextIdDetalleCompra since it's not editable
         editTextIdDetalleCompra.setInputType(InputType.TYPE_NULL);
         editTextIdDetalleCompra.setFocusable(false);
 
@@ -604,6 +492,7 @@ public class DetalleCompraActivity extends AppCompatActivity {
         );
 
         ValidadorDeCampos validadorDeCampos = new ValidadorDeCampos(this, vistas, listaRegex, mensajesDeError);
+
         AlertDialog dialog = builder.create();
 
         btnGuardar.setOnClickListener(v -> {
@@ -614,7 +503,7 @@ public class DetalleCompraActivity extends AppCompatActivity {
                 int cantidadArticulos = Integer.parseInt(editTextCantidadDetalleCompra.getText().toString());
                 double totalDetalle = Double.parseDouble(editTextTotalDetalleCompra.getText().toString());
 
-                // obtener todas la factura seleccionada y validar que esa factura guarda el id y no un string
+                // Get the selected Factura and Articulo
                 FacturaCompra facturaSeleccionada = (FacturaCompra) spinnerFacturaCompra.getSelectedItem();
                 Articulo articuloSeleccionado = (Articulo) spinnerArticuloCompra.getSelectedItem();
 
@@ -626,11 +515,14 @@ public class DetalleCompraActivity extends AppCompatActivity {
                 detalleCompra.setIdArticulo(articuloSeleccionado.getIdArticulo());
                 detalleCompra.setIdCompra(facturaSeleccionada.getIdCompra());
 
-                detalleCompraDAO.updateDetalleCompra(detalleCompra);
-                fillList();
-                dialog.dismiss();
+                // Update the DetalleCompra
+                detalleCompraDAO.updateDetalleCompra(detalleCompra, response -> {
+                    fillList();
+                    dialog.dismiss();
+                });
             }
         });
+
         dialog.show();
     }
 
@@ -640,9 +532,10 @@ public class DetalleCompraActivity extends AppCompatActivity {
         builder.setMessage(getString(R.string.confirm_delete_message) + ": " + idDetalleCompra);
 
         builder.setPositiveButton(R.string.yes, (dialog, which) -> {
-            detalleCompraDAO.deleteDetalleCompra(idDetalleCompra);
-            Toast.makeText(this, R.string.delete_message, Toast.LENGTH_SHORT).show();
-            fillList();
+            detalleCompraDAO.deleteDetalleCompra(idDetalleCompra, response -> {
+                fillList(); // Recargar la lista después de eliminar
+            });
+            dialog.dismiss();
         });
 
         builder.setNegativeButton(R.string.no, (dialog, which) -> dialog.dismiss());
@@ -660,7 +553,14 @@ public class DetalleCompraActivity extends AppCompatActivity {
                 double precio = Double.parseDouble(precioStr);
                 int cantidad = Integer.parseInt(cantidadStr);
                 double total = precio * cantidad;
-                totalEditText.setText(String.format(Locale.getDefault(), "%.2f", total));
+
+                // Si el total es un número entero, muestra solo el número entero
+                if (total == (int) total) {
+                    totalEditText.setText(String.valueOf((int) total));  // Muestra como entero
+                } else {
+                    totalEditText.setText(String.valueOf(total));  // Muestra como decimal
+                }
+
             } catch (NumberFormatException e) {
                 totalEditText.setText("");
             }
@@ -668,6 +568,7 @@ public class DetalleCompraActivity extends AppCompatActivity {
             totalEditText.setText("");
         }
     }
+
 
     private void clearFieldsDetalleCompra(EditText editTextIdDetalleCompra, EditText editTextFechaDetalleCompra, EditText editTextUnitarioDetalleCompra, EditText editTextCantidadDetalleCompra,
                                           EditText editTextTotalDetalleCompra, Spinner spinnerArticuloCompra, Spinner spinnerFacturaCompra) {
@@ -681,14 +582,13 @@ public class DetalleCompraActivity extends AppCompatActivity {
     }
 
     private void buscarDetalleCompraPorId(int id) {
-        DetalleCompra detalleCompra = detalleCompraDAO.getDetalleCompra(id);
-        if(detalleCompra != null) {
-            viewDetalleCompra(detalleCompra);
-        }
-        else {
-            Toast.makeText(this, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        }
+        detalleCompraDAO.getDetalleCompra(id, detalleCompra -> {
+            if (detalleCompra != null) {
+                viewDetalleCompra(detalleCompra);
+            } else {
+                Toast.makeText(this, R.string.not_found_message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
-
-
 }
+
