@@ -30,9 +30,4 @@ public class ControlBD {
     }
 
 
-    public void llenarDB() {
-        SQLiteDatabase db = DBHelper.getWritableDatabase();
-        DBHelper.llenarDB(db);
-        Toast.makeText(context, R.string.fill_database, Toast.LENGTH_LONG).show();
-    }
 }

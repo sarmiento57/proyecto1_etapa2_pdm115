@@ -6,183 +6,214 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.widget.Toast;
 
+import com.android.volley.Response;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RecetaDAO {
-    private SQLiteDatabase db;
-    private Context context;
 
-    public RecetaDAO(SQLiteDatabase db, Context context) {
-        this.db = db;
+    private final Context context;
+    private final WebServiceHelper ws;
+
+    public RecetaDAO(Context context) {
         this.context = context;
+        this.ws = new WebServiceHelper(context);
     }
 
-    public void addReceta(Receta receta) {
-        if (!existeDoctor(receta.getIdDoctor())) {
-            Toast.makeText(context, context.getString(R.string.not_found_message) + context.getString(R.string.id_doctor), Toast.LENGTH_SHORT).show();
-            return;
-        }
+    public void addReceta(Receta receta, Response.Listener<String> callback) {
+        isDuplicate(receta.getIdReceta(), exists -> {
+            if (exists) {
+                Toast.makeText(context, R.string.duplicate_message, Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        if (!existeCliente(receta.getIdCliente())) {
-            Toast.makeText(context, context.getString(R.string.not_found_message) + context.getString(R.string.id_doctor), Toast.LENGTH_SHORT).show();
-            return;
-        }
+            Map<String, String> params = new HashMap<>();
+            params.put("idreceta", String.valueOf(receta.getIdReceta()));
+            params.put("iddoctor", String.valueOf(receta.getIdDoctor()));
+            params.put("idcliente", String.valueOf(receta.getIdCliente()));
+            params.put("fechaexpedida", receta.getFechaExpedida());
+            params.put("descripcion", receta.getDescripcion());
 
-        if (isDuplicate(receta.getIdReceta())) {
-            Toast.makeText(context, R.string.duplicate_message, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        ContentValues values = new ContentValues();
-        values.put("IDDOCTOR", receta.getIdDoctor());
-        values.put("IDCLIENTE", receta.getIdCliente());
-        values.put("IDRECETA", receta.getIdReceta());
-        values.put("FECHAEXPEDIDA", receta.getFechaExpedida());
-        values.put("DESCRIPCION", receta.getDescripcion());
-
-        db.insert("RECETA", null, values);
-        Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
-    }
-
-
-    public Receta getReceta(int idReceta) {
-        String sql = "SELECT * FROM RECETA WHERE IDRECETA=?";
-        Cursor cursor = db.rawQuery(sql, new String[]{
-                String.valueOf(idReceta)
-        });
-
-        if (cursor.moveToFirst()) {
-            Receta receta = new Receta(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDOCTOR")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDCLIENTE")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDRECETA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("FECHAEXPEDIDA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("DESCRIPCION")),
-                    context
+            ws.post("receta/insertar_receta.php", params,
+                    response -> {
+                        Toast.makeText(context, R.string.save_message, Toast.LENGTH_SHORT).show();
+                        callback.onResponse(response);
+                    },
+                    error -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
             );
-            cursor.close();
-            return receta;
-        }
-
-        cursor.close();
-        Toast.makeText(context, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        return null;
-    }
-
-    public List<Receta> getAllRecetas() {
-        List<Receta> lista = new ArrayList<>();
-        Cursor cursor = db.rawQuery("SELECT * FROM RECETA", null);
-
-        while (cursor.moveToNext()) {
-            Receta receta = new Receta(
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDDOCTOR")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDCLIENTE")),
-                    cursor.getInt(cursor.getColumnIndexOrThrow("IDRECETA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("FECHAEXPEDIDA")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("DESCRIPCION")),
-                    context
-            );
-            lista.add(receta);
-        }
-        cursor.close();
-        return lista;
-    }
-
-    public void updateReceta(Receta receta) {
-        ContentValues values = new ContentValues();
-        values.put("FECHAEXPEDIDA", receta.getFechaExpedida());
-        values.put("DESCRIPCION", receta.getDescripcion());
-
-        int rowsAffected = db.update(
-                "RECETA",
-                values,
-                "IDRECETA=?",
-                new String[]{
-                        String.valueOf(receta.getIdReceta())
-                });
-
-        if (rowsAffected == 0) {
-            Toast.makeText(context, context.getString(R.string.not_found_message) + context.getString(R.string.id_receta), Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public void deleteReceta(int idReceta) {
-        int rowsAffected = db.delete(
-                "RECETA",
-                "IDRECETA=?",
-                new String[]{
-                        String.valueOf(idReceta)
-                });
-
-        if (rowsAffected == 0) {
-            Toast.makeText(context, context.getString(R.string.not_found_message) + context.getString(R.string.id_receta), Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public List<Doctor> getAllDoctor() {
-        List<Doctor> lista = new ArrayList<>();
-        String sql = "SELECT * FROM DOCTOR";
-        Cursor cursor = db.rawQuery(sql, null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                int idDoctor = cursor.getInt(cursor.getColumnIndexOrThrow("IDDOCTOR"));
-                String nombreDoctor = cursor.getString(cursor.getColumnIndexOrThrow("NOMBREDOCTOR"));
-
-                lista.add(new Doctor(idDoctor, nombreDoctor, context));
-            } while (cursor.moveToNext());
-        }
-
-        cursor.close();
-        return lista;
-    }
-
-    public List<Cliente> getAllCliente() {
-        List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT * FROM CLIENTE";
-        Cursor cursor = db.rawQuery(sql, null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                int idCliente = cursor.getInt(cursor.getColumnIndexOrThrow("IDCLIENTE"));
-                String nombreCliente = cursor.getString(cursor.getColumnIndexOrThrow("NOMBRECLIENTE"));
-
-                lista.add(new Cliente(idCliente, nombreCliente, context));
-            } while (cursor.moveToNext());
-        }
-
-        cursor.close();
-        return lista;
-    }
-
-    private boolean isDuplicate(int idReceta) {
-        String sql = "SELECT 1 FROM RECETA WHERE IDRECETA=?";
-        Cursor cursor = db.rawQuery(sql, new String[]{
-                String.valueOf(idReceta)
         });
+    }
 
-        boolean exists = cursor.moveToFirst();
-        cursor.close();
-        return exists;
+    public void updateReceta(Receta receta, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idreceta", String.valueOf(receta.getIdReceta()));
+        params.put("fechaexpedida", receta.getFechaExpedida());
+        params.put("descripcion", receta.getDescripcion());
+
+        ws.post("receta/actualizar_receta.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.update_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                error -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+        );
     }
 
 
-    private boolean existeDoctor(int idDoctor) {
-        Cursor cursor = db.rawQuery("SELECT 1 FROM DOCTOR WHERE IDDOCTOR = ?", new String[]{String.valueOf(idDoctor)});
-        boolean existe = cursor.moveToFirst();
-        cursor.close();
-        return existe;
+    public void deleteReceta(int idReceta, Response.Listener<String> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idreceta", String.valueOf(idReceta));
+
+        ws.post("receta/eliminar_receta.php", params,
+                response -> {
+                    Toast.makeText(context, R.string.delete_message, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(response);
+                },
+                error -> Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show()
+        );
     }
 
-    private boolean existeCliente(int idCliente) {
-        Cursor cursor = db.rawQuery("SELECT 1 FROM CLIENTE WHERE IDCLIENTE = ?", new String[]{String.valueOf(idCliente)});
-        boolean existe = cursor.moveToFirst();
-        cursor.close();
-        return existe;
+    public void getAllRecetas(Response.Listener<List<Receta>> callback) {
+        ws.post("receta/listar_recetas.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<Receta> list = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            list.add(new Receta(
+                                    obj.getInt("idreceta"),
+                                    obj.getInt("iddoctor"),
+                                    obj.getInt("idcliente"),
+                                    obj.getString("fechaexpedida"),
+                                    obj.getString("descripcion"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(list);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
+    }
+
+    public void getReceta(int id, Response.Listener<Receta> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idreceta", String.valueOf(id));
+
+        ws.post("receta/obtener_receta.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        if (obj.has("idreceta")) {
+                            Receta receta = new Receta(
+                                    obj.getInt("idreceta"),
+                                    obj.getInt("iddoctor"),
+                                    obj.getInt("idcliente"),
+                                    obj.getString("fechaexpedida"),
+                                    obj.getString("descripcion"),
+                                    context
+                            );
+                            callback.onResponse(receta);
+                        } else {
+                            callback.onResponse(null);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(null);
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(null);
+                });
+    }
+
+    // Verificar si la receta es duplicada
+    private void isDuplicate(int id, Response.Listener<Boolean> callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("idreceta", String.valueOf(id));
+
+        ws.post("receta/verificar_receta.php", params,
+                response -> {
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        callback.onResponse(obj.optBoolean("existe", false));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(false);
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(false);
+                });
+    }
+
+    // Obtener todos los doctores
+    public void getAllDoctores(Response.Listener<List<Doctor>> callback) {
+        ws.post("receta/listar_doctores.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<Doctor> doctores = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            doctores.add(new Doctor(
+                                    obj.getInt("iddoctor"),
+                                    obj.getString("nombredoctor"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(doctores);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
+    }
+
+    // Obtener todos los clientes
+    public void getAllClientes(Response.Listener<List<Cliente>> callback) {
+        ws.post("receta/listar_clientes.php", new HashMap<>(),
+                response -> {
+                    try {
+                        JSONArray array = new JSONArray(response);
+                        List<Cliente> clientes = new ArrayList<>();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.getJSONObject(i);
+                            clientes.add(new Cliente(
+                                    obj.getInt("idcliente"),
+                                    obj.getString("nombrecliente"),
+                                    context
+                            ));
+                        }
+                        callback.onResponse(clientes);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        callback.onResponse(Collections.emptyList());
+                    }
+                },
+                error -> {
+                    Toast.makeText(context, R.string.connection_error, Toast.LENGTH_SHORT).show();
+                    callback.onResponse(Collections.emptyList());
+                });
     }
 }

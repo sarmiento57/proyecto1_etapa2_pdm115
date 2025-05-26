@@ -41,5 +41,13 @@ public class WebServiceHelper {
                 r -> Toast.makeText(context, r, Toast.LENGTH_SHORT).show(),
                 e -> Toast.makeText(context, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
+
+    // Método para ejecutar el script 'test_data.sql' en el servidor
+    public void ejecutarTestDataScript(Response.Listener<String> onSuccess, Response.ErrorListener onError) {
+        Map<String, String> p = new HashMap<>();
+        p.put("script", "test_data");  // Especificamos que queremos ejecutar el script 'test_data.sql'
+        post("ejecutar_test_data.php", p, onSuccess, onError);
+    }
+
 }
 

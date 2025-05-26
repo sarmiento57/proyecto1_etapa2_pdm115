@@ -23,8 +23,8 @@ public class RecetaActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_receta);
-        SQLiteDatabase conexionDB = new ControlBD(this).getConnection();
-        recetaDAO = new RecetaDAO(conexionDB, this);
+        recetaDAO = new RecetaDAO(this);
+
         TextView txtBusqueda = findViewById(R.id.busquedaReceta);
 
         Button btnAgregarReceta = findViewById(R.id.btnAgregarReceta);
@@ -32,7 +32,7 @@ public class RecetaActivity extends AppCompatActivity {
         btnAgregarReceta.setOnClickListener(v -> showAddDialog());
 
         Button btnBuscarRecetaPorId = findViewById(R.id.btnBuscarReceta);
-        btnBuscarRecetaPorId.setVisibility(vac.validarAcceso(2) || vac.validarAcceso(3) || vac.validarAcceso(4)? View.VISIBLE : View.INVISIBLE);
+        btnBuscarRecetaPorId.setVisibility(vac.validarAcceso(2) || vac.validarAcceso(3) || vac.validarAcceso(4) ? View.VISIBLE : View.INVISIBLE);
         btnBuscarRecetaPorId.setOnClickListener(v -> {
             try {
                 String id = txtBusqueda.getText().toString().trim();
@@ -53,11 +53,12 @@ public class RecetaActivity extends AppCompatActivity {
         });
     }
 
-
     private void llenarLista() {
-        listaReceta = recetaDAO.getAllRecetas();
-        adaptadorReceta = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listaReceta);
-        listverReceta.setAdapter(adaptadorReceta);
+        recetaDAO.getAllRecetas(recetas -> runOnUiThread(() -> {
+            listaReceta = recetas;
+            adaptadorReceta = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listaReceta);
+            listverReceta.setAdapter(adaptadorReceta);
+        }));
     }
 
     private void showOptionsDialog(final Receta receta) {
@@ -113,71 +114,71 @@ public class RecetaActivity extends AppCompatActivity {
 
         AlertDialog dialog = builder.create();
 
-        List<Doctor> doctor = recetaDAO.getAllDoctor();
-        doctor.add(0, new Doctor(-1, getString(R.string.select_doctor), this));
-        ArrayAdapter<Doctor> adapterDoctor = new ArrayAdapter<Doctor>(this, android.R.layout.simple_spinner_item, doctor) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                Doctor doctor = getItem(position);
-                if (doctor.getIdDoctor() == -1) {
-                    view.setText(getString(R.string.select_doctor));
-                } else {
-                    view.setText(doctor.getNombreDoctor());
+        // Cargar Doctores con estilo similar al ejemplo de SucursalFarmacia
+        recetaDAO.getAllDoctores(doctors -> {
+            doctors.add(0, new Doctor(-1, getString(R.string.select_doctor), this)); // Agregar opción "Seleccionar Doctor"
+
+            ArrayAdapter<Doctor> adapterDoctor = new ArrayAdapter<Doctor>(this, android.R.layout.simple_spinner_item, doctors) {
+                @Override
+                public View getView(int position, View convertView, ViewGroup parent) {
+                    TextView view = (TextView) super.getView(position, convertView, parent);
+                    Doctor doctor = getItem(position);
+                    if (doctor.getIdDoctor() == -1) {
+                        view.setText(getString(R.string.select_doctor));
+                    } else {
+                        view.setText(doctor.getNombreDoctor());
+                    }
+                    return view;
                 }
-                return view;
-            }
 
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                Doctor doctor = getItem(position);
-                if (doctor.getIdDoctor() == -1) {
-                    view.setText(getString(R.string.select_doctor));
-
-                } else {
-                    view.setText(doctor.getNombreDoctor() + " (ID: " + doctor.getIdDoctor() + ")");
-                    
+                @Override
+                public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                    TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                    Doctor doctor = getItem(position);
+                    if (doctor.getIdDoctor() == -1) {
+                        view.setText(getString(R.string.select_doctor));
+                    } else {
+                        view.setText(doctor.getNombreDoctor() + " (ID: " + doctor.getIdDoctor() + ")");
+                    }
+                    return view;
                 }
-                return view;
-            }
-        };
+            };
+            adapterDoctor.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerIdDoctor.setAdapter(adapterDoctor);
+        });
 
-        adapterDoctor.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerIdDoctor.setAdapter(adapterDoctor);
+        // Cargar Clientes con estilo similar al ejemplo de SucursalFarmacia
+        recetaDAO.getAllClientes(clientes -> {
+            clientes.add(0, new Cliente(-1, getString(R.string.select_cliente), this)); // Agregar opción "Seleccionar Cliente"
 
-        List<Cliente> clientes = recetaDAO.getAllCliente();
-        clientes.add(0, new Cliente(-1, getString(R.string.select_cliente), this));
-        ArrayAdapter<Cliente> adapterCliente = new ArrayAdapter<Cliente>(this, android.R.layout.simple_spinner_item, clientes) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                Cliente cliente = getItem(position);
-                if (cliente.getIdCliente() == -1) {
-                    view.setText(getString(R.string.select_cliente));
-                } else {
-                    view.setText(cliente.getNombreCliente());
+            ArrayAdapter<Cliente> adapterCliente = new ArrayAdapter<Cliente>(this, android.R.layout.simple_spinner_item, clientes) {
+                @Override
+                public View getView(int position, View convertView, ViewGroup parent) {
+                    TextView view = (TextView) super.getView(position, convertView, parent);
+                    Cliente cliente = getItem(position);
+                    if (cliente.getIdCliente() == -1) {
+                        view.setText(getString(R.string.select_cliente));
+                    } else {
+                        view.setText(cliente.getNombreCliente());
+                    }
+                    return view;
                 }
-                return view;
-            }
 
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                Cliente cliente = getItem(position);
-                if (cliente.getIdCliente() == -1) {
-                    view.setText(getString(R.string.select_cliente));
-
-                } else {
-                    view.setText(cliente.getNombreCliente() + " (ID: " + cliente.getIdCliente() + ")");
-                    
+                @Override
+                public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                    TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                    Cliente cliente = getItem(position);
+                    if (cliente.getIdCliente() == -1) {
+                        view.setText(getString(R.string.select_cliente));
+                    } else {
+                        view.setText(cliente.getNombreCliente() + " (ID: " + cliente.getIdCliente() + ")");
+                    }
+                    return view;
                 }
-                return view;
-            }
-        };
-
-        adapterCliente.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerIdCliente.setAdapter(adapterCliente);
+            };
+            adapterCliente.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerIdCliente.setAdapter(adapterCliente);
+        });
 
         btnGuardar.setOnClickListener(v -> {
             List<View> vistas = Arrays.asList(spinnerIdDoctor, spinnerIdCliente, etIdReceta, tvFecha, etDescripcion);
@@ -196,24 +197,18 @@ public class RecetaActivity extends AppCompatActivity {
                 Doctor doctorSeleccionado = (Doctor) spinnerIdDoctor.getSelectedItem();
                 Cliente clienteSeleccionado = (Cliente) spinnerIdCliente.getSelectedItem();
 
-                if (doctorSeleccionado == null || clienteSeleccionado == null) {
-                    Toast.makeText(this, "Debe seleccionar un doctor y un cliente válidos", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
                 int idDoctor = doctorSeleccionado.getIdDoctor();
                 int idCliente = clienteSeleccionado.getIdCliente();
-
                 int idReceta = Integer.parseInt(etIdReceta.getText().toString().trim());
                 String fecha = tvFecha.getText().toString().trim();
                 String descripcion = etDescripcion.getText().toString().trim();
 
                 Receta receta = new Receta(idDoctor, idCliente, idReceta, fecha, descripcion, this);
-                recetaDAO.addReceta(receta);
-                llenarLista();
-                dialog.dismiss();
+                recetaDAO.addReceta(receta, response -> {
+                    llenarLista();
+                    dialog.dismiss();
+                });
             }
-
         });
 
         btnLimpiar.setOnClickListener(v -> {
@@ -226,6 +221,7 @@ public class RecetaActivity extends AppCompatActivity {
 
         dialog.show();
     }
+
 
     private void mostrarDatePicker(TextView target) {
         final Calendar c = Calendar.getInstance();
@@ -250,102 +246,113 @@ public class RecetaActivity extends AppCompatActivity {
         TextView tvFecha = view.findViewById(R.id.textViewFechaExpedida);
         EditText etDescripcion = view.findViewById(R.id.editTextDescripcion);
 
-        List<Doctor> doctor = recetaDAO.getAllDoctor();
-        doctor.add(0, new Doctor( -1, null, this));
-        ArrayAdapter<Doctor> adapterDoctor = new ArrayAdapter<Doctor>(this, android.R.layout.simple_spinner_item, doctor) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                Doctor doctor = getItem(position);
-                if (doctor.getIdDoctor() == -1) {
-                    view.setText(getString(R.string.select_factura));
-                } else {
-                    view.setText(doctor.getNombreDoctor());
+        // Cargar Doctores con estilo similar al ejemplo de SucursalFarmacia
+        recetaDAO.getAllDoctores(doctors -> {
+            doctors.add(0, new Doctor(-1, getString(R.string.select_doctor), this)); // "Seleccionar Doctor"
+
+            runOnUiThread(() -> {
+                ArrayAdapter<Doctor> adapterDoctor = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, doctors) {
+                    @Override
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        TextView view = (TextView) super.getView(position, convertView, parent);
+                        Doctor doctor = getItem(position);
+                        if (doctor.getIdDoctor() == -1) {
+                            view.setText(getString(R.string.select_doctor));
+                        } else {
+                            view.setText(doctor.getNombreDoctor());
+                        }
+                        return view;
+                    }
+
+                    @Override
+                    public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                        TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                        Doctor doctor = getItem(position);
+                        if (doctor.getIdDoctor() == -1) {
+                            view.setText(getString(R.string.select_doctor));
+                        } else {
+                            view.setText(doctor.getNombreDoctor() + " (ID: " + doctor.getIdDoctor() + ")");
+                        }
+                        return view;
+                    }
+                };
+                adapterDoctor.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerIdDoctor.setAdapter(adapterDoctor);
+
+                // Seleccionar el doctor correspondiente
+                for (int i = 0; i < doctors.size(); i++) {
+                    if (doctors.get(i).getIdDoctor() == receta.getIdDoctor()) {
+                        spinnerIdDoctor.setSelection(i);
+                        break;
+                    }
                 }
-                return view;
-            }
+            });
+        });
 
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                Doctor doctor = getItem(position);
-                if (doctor.getIdDoctor() == -1) {
-                    view.setText(getString(R.string.select_factura));
+        // Cargar Clientes con estilo similar al ejemplo de SucursalFarmacia
+        recetaDAO.getAllClientes(clientes -> {
+            clientes.add(0, new Cliente(-1, getString(R.string.select_cliente), this)); // "Seleccionar Cliente"
 
-                } else {
-                    view.setText(doctor.getNombreDoctor() + " (ID: " + doctor.getIdDoctor() + ")");
-                    
+            runOnUiThread(() -> {
+                ArrayAdapter<Cliente> adapterCliente = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, clientes) {
+                    @Override
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        TextView view = (TextView) super.getView(position, convertView, parent);
+                        Cliente cliente = getItem(position);
+                        if (cliente.getIdCliente() == -1) {
+                            view.setText(getString(R.string.select_cliente));
+                        } else {
+                            view.setText(cliente.getNombreCliente());
+                        }
+                        return view;
+                    }
+
+                    @Override
+                    public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                        TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                        Cliente cliente = getItem(position);
+                        if (cliente.getIdCliente() == -1) {
+                            view.setText(getString(R.string.select_cliente));
+                        } else {
+                            view.setText(cliente.getNombreCliente() + " (ID: " + cliente.getIdCliente() + ")");
+                        }
+                        return view;
+                    }
+                };
+                adapterCliente.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerIdCliente.setAdapter(adapterCliente);
+
+                // Seleccionar el cliente correspondiente
+                for (int i = 0; i < clientes.size(); i++) {
+                    if (clientes.get(i).getIdCliente() == receta.getIdCliente()) {
+                        spinnerIdCliente.setSelection(i);
+                        break;
+                    }
                 }
-                return view;
-            }
-        };
+            });
+        });
 
-        adapterDoctor.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerIdDoctor.setAdapter(adapterDoctor);
-
-        List<Cliente> clientes = recetaDAO.getAllCliente();
-        doctor.add(0, new Doctor( -1, null, this));
-        ArrayAdapter<Cliente> adapterCliente = new ArrayAdapter<Cliente>(this, android.R.layout.simple_spinner_item, clientes) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                Cliente cliente = getItem(position);
-                if (cliente.getIdCliente() == -1) {
-                    view.setText(getString(R.string.select_factura));
-                } else {
-                    view.setText(cliente.getNombreCliente());
-                }
-                return view;
-            }
-
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                Cliente cliente = getItem(position);
-                if (cliente.getIdCliente() == -1) {
-                    view.setText(getString(R.string.select_factura));
-
-                } else {
-                    view.setText(cliente.getNombreCliente() + " (ID: " + cliente.getIdCliente() + ")");
-                    
-                }
-                return view;
-            }
-        };
-
-        adapterCliente.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerIdCliente.setAdapter(adapterCliente);
-
-        for (int i = 0; i < doctor.size(); i++) {
-            if (doctor.get(i).getIdDoctor() == receta.getIdDoctor()) {
-                spinnerIdDoctor.setSelection(i);
-                break;
-            }
-        }
-
-        for (int i = 0; i < clientes.size(); i++) {
-            if (clientes.get(i).getIdCliente() == receta.getIdCliente()) {
-                spinnerIdCliente.setSelection(i);
-                break;
-            }
-        }
-
-
+        // Configurar los campos de texto con la información de la receta
         etIdReceta.setText(String.valueOf(receta.getIdReceta()));
         tvFecha.setText(receta.getFechaExpedida());
         etDescripcion.setText(receta.getDescripcion());
 
+        // Deshabilitar los campos de los Spinners y los EditText (solo visualización)
         spinnerIdDoctor.setEnabled(false);
         spinnerIdCliente.setEnabled(false);
         etIdReceta.setEnabled(false);
         tvFecha.setEnabled(false);
         etDescripcion.setEnabled(false);
 
+        // Ocultar los botones de guardar y limpiar
         view.findViewById(R.id.btnGuardarReceta).setVisibility(View.GONE);
         view.findViewById(R.id.btnLimpiarReceta).setVisibility(View.GONE);
 
+        // Mostrar el diálogo
         builder.create().show();
     }
+
+
 
     private void editarReceta(Receta receta) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -360,95 +367,109 @@ public class RecetaActivity extends AppCompatActivity {
         TextView tvFecha = view.findViewById(R.id.textViewFechaExpedida);
         EditText etDescripcion = view.findViewById(R.id.editTextDescripcion);
 
-
+        // Rellenar los campos básicos de la receta
         etIdReceta.setText(String.valueOf(receta.getIdReceta()));
         tvFecha.setText(receta.getFechaExpedida());
         etDescripcion.setText(receta.getDescripcion());
 
-        List<Doctor> doctor = recetaDAO.getAllDoctor();
-        doctor.add(0, new Doctor(-1, getString(R.string.select_doctor), this));
-        ArrayAdapter<Doctor> adapterDoctor = new ArrayAdapter<Doctor>(this, android.R.layout.simple_spinner_item, doctor) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                Doctor doctor = getItem(position);
-                if (doctor.getIdDoctor() == -1) {
-                    view.setText(getString(R.string.select_doctor));
-                } else {
-                    view.setText(doctor.getNombreDoctor());
+        // Cargar Doctores de forma asincrónica
+        recetaDAO.getAllDoctores(doctors -> {
+            // Agregar "Seleccionar" al inicio de la lista
+            doctors.add(0, new Doctor(-1, getString(R.string.select_doctor), this));
+
+            runOnUiThread(() -> {
+                // Adaptador personalizado para mostrar el nombre y el ID
+                ArrayAdapter<Doctor> adapterDoctor = new ArrayAdapter<Doctor>(this, android.R.layout.simple_spinner_item, doctors) {
+                    @Override
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        TextView view = (TextView) super.getView(position, convertView, parent);
+                        Doctor doctor = getItem(position);
+                        if (doctor.getIdDoctor() == -1) {
+                            view.setText(getString(R.string.select_doctor));
+                        } else {
+                            view.setText(doctor.getNombreDoctor()); // Mostrar solo el nombre en el Spinner
+                        }
+                        return view;
+                    }
+
+                    @Override
+                    public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                        TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                        Doctor doctor = getItem(position);
+                        if (doctor.getIdDoctor() == -1) {
+                            view.setText(getString(R.string.select_doctor));
+                        } else {
+                            view.setText(doctor.getNombreDoctor() + " (ID: " + doctor.getIdDoctor() + ")");
+                        }
+                        return view;
+                    }
+                };
+                adapterDoctor.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerIdDoctor.setAdapter(adapterDoctor);
+
+                // Seleccionar el doctor correspondiente
+                for (int i = 0; i < doctors.size(); i++) {
+                    if (doctors.get(i).getIdDoctor() == receta.getIdDoctor()) {
+                        spinnerIdDoctor.setSelection(i);
+                        break;
+                    }
                 }
-                return view;
-            }
+            });
+        });
 
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                Doctor doctor = getItem(position);
-                if (doctor.getIdDoctor() == -1) {
-                    view.setText(getString(R.string.select_doctor));
+        // Cargar Clientes de forma asincrónica
+        recetaDAO.getAllClientes(clientes -> {
+            // Agregar "Seleccionar" al inicio de la lista
+            clientes.add(0, new Cliente(-1, getString(R.string.select_cliente), this));
 
-                } else {
-                    view.setText(doctor.getNombreDoctor() + " (ID: " + doctor.getIdDoctor() + ")");
-                    
+            runOnUiThread(() -> {
+                // Adaptador personalizado para mostrar el nombre y el ID
+                ArrayAdapter<Cliente> adapterCliente = new ArrayAdapter<Cliente>(this, android.R.layout.simple_spinner_item, clientes) {
+                    @Override
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        TextView view = (TextView) super.getView(position, convertView, parent);
+                        Cliente cliente = getItem(position);
+                        if (cliente.getIdCliente() == -1) {
+                            view.setText(getString(R.string.select_cliente));
+                        } else {
+                            view.setText(cliente.getNombreCliente()); // Mostrar solo el nombre en el Spinner
+                        }
+                        return view;
+                    }
+
+                    @Override
+                    public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                        TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                        Cliente cliente = getItem(position);
+                        if (cliente.getIdCliente() == -1) {
+                            view.setText(getString(R.string.select_cliente));
+                        } else {
+                            view.setText(cliente.getNombreCliente() + " (ID: " + cliente.getIdCliente() + ")");
+                        }
+                        return view;
+                    }
+                };
+                adapterCliente.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerIdCliente.setAdapter(adapterCliente);
+
+                // Seleccionar el cliente correspondiente
+                for (int i = 0; i < clientes.size(); i++) {
+                    if (clientes.get(i).getIdCliente() == receta.getIdCliente()) {
+                        spinnerIdCliente.setSelection(i);
+                        break;
+                    }
                 }
-                return view;
-            }
-        };
+            });
+        });
 
-        adapterDoctor.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerIdDoctor.setAdapter(adapterDoctor);
-
-        List<Cliente> clientes = recetaDAO.getAllCliente();
-        clientes.add(0, new Cliente(-1, getString(R.string.select_cliente), this));
-        ArrayAdapter<Cliente> adapterCliente = new ArrayAdapter<Cliente>(this, android.R.layout.simple_spinner_item, clientes) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
-                Cliente cliente = getItem(position);
-                if (cliente.getIdCliente() == -1) {
-                    view.setText(getString(R.string.select_cliente));
-                } else {
-                    view.setText(cliente.getNombreCliente());
-                }
-                return view;
-            }
-
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
-                Cliente cliente = getItem(position);
-                if (cliente.getIdCliente() == -1) {
-                    view.setText(getString(R.string.select_cliente));
-
-                } else {
-                    view.setText(cliente.getNombreCliente() + " (ID: " + cliente.getIdCliente() + ")");
-                    
-                }
-                return view;
-            }
-        };
-
-        adapterCliente.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerIdCliente.setAdapter(adapterCliente);
-
-        for (int i = 0; i < doctor.size(); i++) {
-            if (doctor.get(i).getIdDoctor() == receta.getIdDoctor()) {
-                spinnerIdDoctor.setSelection(i);
-                break;
-            }
-        }
-
-        for (int i = 0; i < clientes.size(); i++) {
-            if (clientes.get(i).getIdCliente() == receta.getIdCliente()) {
-                spinnerIdCliente.setSelection(i);
-                break;
-            }
-        }
-
+        // Configurar los Spinners como no editables
         spinnerIdDoctor.setEnabled(false);
         spinnerIdCliente.setEnabled(false);
         etIdReceta.setEnabled(false);
+        tvFecha.setEnabled(false);
+        etDescripcion.setEnabled(false);
 
+        // Mostrar el DatePicker para la fecha
         tvFecha.setOnClickListener(v -> mostrarDatePicker(tvFecha));
 
         Button btnGuardar = view.findViewById(R.id.btnGuardarReceta);
@@ -467,22 +488,16 @@ public class RecetaActivity extends AppCompatActivity {
             if (validador.validarCampos()) {
                 receta.setFechaExpedida(tvFecha.getText().toString().trim());
                 receta.setDescripcion(etDescripcion.getText().toString().trim());
-                recetaDAO.updateReceta(receta);
-                llenarLista();
-                dialog.dismiss();
+
+                // Llamar al método updateReceta con un Response.Listener
+                recetaDAO.updateReceta(receta, response -> {
+                    llenarLista(); // Recargar la lista después de la actualización
+                    dialog.dismiss();
+                });
             }
         });
 
         dialog.show();
-    }
-
-    private void buscarRecetaPorId(int idReceta) {
-        Receta receta = recetaDAO.getReceta(idReceta);
-        if (receta != null) {
-            verReceta(receta);
-        } else {
-            Toast.makeText(this, R.string.not_found_message, Toast.LENGTH_SHORT).show();
-        }
     }
 
     private void eliminarReceta(int idDoctor, int idCliente, int idReceta) {
@@ -490,12 +505,22 @@ public class RecetaActivity extends AppCompatActivity {
         builder.setTitle(R.string.confirm_delete);
         builder.setMessage(getString(R.string.confirm_delete_message) + ": " + idDoctor + ", " + idCliente + ", " + idReceta);
         builder.setPositiveButton(R.string.yes, (dialog, which) -> {
-            recetaDAO.deleteReceta(idReceta);
-            llenarLista(); // Refresh the ListView
+            recetaDAO.deleteReceta(idReceta, response -> llenarLista()); // Recargar la lista después de eliminar
+            dialog.dismiss();
         });
         builder.setNegativeButton(R.string.no, (dialog, which) -> dialog.dismiss());
         AlertDialog dialog = builder.create();
         dialog.show();
     }
 
+    private void buscarRecetaPorId(int idReceta) {
+        recetaDAO.getReceta(idReceta, receta -> {
+            if (receta != null) {
+                verReceta(receta);
+            } else {
+                Toast.makeText(this, R.string.not_found_message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 }
+
